@@ -1,0 +1,27 @@
+[project]
+name = "llm-qlient"
+description = "Qt-based desktop client for interacting with local LLMs"
+version = "0.0.1"
+readme = "README.md"
+authors = [
+    {name="Kadir Aksoy"},
+]
+classifiers = [
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3"
+]
+dependencies = [
+    "freshqt",
+]
+requires-python = ">=3.10"
+
+[project.scripts]
+main = "llm_qlient.main:main"
+
+[project.urls]
+homepage = "https://github.com/kadir014/llm-qlient"
+bugtracker = "https://github.com/kadir014/llm-qlient/issues"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
