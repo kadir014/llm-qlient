@@ -20,6 +20,9 @@ from freshqt.assets import HEROICONS
 from llm_qlient import shared
 from llm_qlient.core import log
 from llm_qlient.ui.main_window import MainWindow
+from llm_qlient.ui.icon_manager import IconManager
+
+from freshqt.palettes.catppuccin import UI_CATPPUCCIN_MOCHA
 
 
 class App:
@@ -29,6 +32,8 @@ class App:
 
     def __init__(self) -> None:
         start = perf_counter()
+
+        ROOT = Path.cwd()
 
         self.qapp = QApplication([])
 
@@ -51,6 +56,11 @@ class App:
             font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
             self.qapp.setFont(font)
 
+        # This has a weird coupling, the first one is for more comfortable use
+        # across this project, the second is for the themed widgets
+        shared.icons = IconManager()
+        shared.theme.icons = shared.icons
+
         # SVG icons have to be loaded before any raster icons so Qt can select proper icon engine
         for iconname in HEROICONS:
             iconpath = HEROICONS[iconname]
@@ -58,16 +68,10 @@ class App:
             shared.icons[iconname] = icon
             log.info(f"Icon {iconname} loaded at path '{iconpath}'")
 
-        for root, _, files in os.walk("data/icons"):
-            root = Path(root)
-            for file in files:
-                iconpath = root / file
-                iconname = iconpath.stem
-                icon = QIcon(str(iconpath.absolute()))
-                shared.icons[iconname] = icon
-                log.info(f"Icon {iconname} loaded at path '{iconpath}'")
+        shared.icons.load(ROOT / "data" / "icons")
 
         shared.theme.font_family = "Outfit"
+        shared.theme.update_palette(UI_CATPPUCCIN_MOCHA)
 
         self.mainwindow = MainWindow()
         shared.theme.add_widget(self.mainwindow)

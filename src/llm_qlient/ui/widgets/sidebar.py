@@ -10,7 +10,7 @@
 
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtWidgets import QWidget, QVBoxLayout
-from PyQt6.QtGui import QIcon, QPainter, QPainterPath
+from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor
 from freshqt.core import TypographyType
 from freshqt.widgets import Button, Divider
 from freshqt.animation import Tween, Easing
@@ -18,7 +18,7 @@ from freshqt.animation import Tween, Easing
 from llm_qlient import shared
 
 
-class Sidebar(QWidget):
+class SideBar(QWidget):
     def __init__(self) -> None:
         super().__init__()
 
@@ -45,7 +45,7 @@ class Sidebar(QWidget):
 
         self.page_buttons: dict[str, Button] = {}
 
-        self.add_page_button("LLM Qlient", shared.icons["windowicon"])
+        self.add_page_button("LLM Qlient", shared.icons.get("windowicon"))
         self.add_divider()
 
         self.page_buttons["LLM Qlient"].clicked.connect(self.__home_clicked)
@@ -56,7 +56,7 @@ class Sidebar(QWidget):
         self.__resize_tween.update()
         self.__cursor_tween.update()
 
-    def add_page_button(self, page_name: str, icon: QIcon) -> None:
+    def add_page_button(self, page_name: str, icon: str | QIcon) -> None:
         """
         Add a new page button to the sidebar.
         
@@ -72,7 +72,10 @@ class Sidebar(QWidget):
         shared.theme.add_widget(btn)
         self.layout().addWidget(btn)
 
-        btn.setIcon(icon)
+        if isinstance(icon, str):
+            btn.icon_name = icon
+        else:
+            btn.setIcon(icon)
         btn.setIconSize(QSize(self.icon_size, self.icon_size))
         btn.setFixedSize(self.button_size, self.button_size)
         btn.border_radius = -1
@@ -150,8 +153,8 @@ class Sidebar(QWidget):
 
             # Cursor properties
             # TODO: Perhaps make these adjustable?
-            cursor_w = 8.5
-            cursor_h = 20.0
+            cursor_w = 8.2
+            cursor_h = 15.0
             cursor_r = 4.0
             x = -cursor_w * 0.5
 

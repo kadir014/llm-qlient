@@ -14,7 +14,7 @@ Qt-based desktop user interface for interacting with local Large Language Models
 
 
 # Installation
-Python 3.10+ and [uv](https://github.com/astral-sh/uv) is required. Clone the repository.
+Python 3.12+ and [uv](https://github.com/astral-sh/uv) is required. Clone the repository.
 ```sh
 $ git clone https://github.com/kadir014/llm-qlient.git
 $ cd llm-qlient
