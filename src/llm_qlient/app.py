@@ -11,10 +11,10 @@
 import os
 import platform
 from time import perf_counter
+from pathlib import Path
 
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QFont, QFontDatabase, QIcon
-from freshqt.core import Theme
 from freshqt.assets import HEROICONS
 
 from llm_qlient import shared
@@ -31,6 +31,8 @@ class App:
         start = perf_counter()
 
         self.qapp = QApplication([])
+
+        # TODO: better path for data fonts icons etc
 
         for root, _, files in os.walk("data/fonts"):
             for file in files:
@@ -56,7 +58,15 @@ class App:
             shared.icons[iconname] = icon
             log.info(f"Icon {iconname} loaded at path '{iconpath}'")
 
-        shared.theme = Theme()
+        for root, _, files in os.walk("data/icons"):
+            root = Path(root)
+            for file in files:
+                iconpath = root / file
+                iconname = iconpath.stem
+                icon = QIcon(str(iconpath.absolute()))
+                shared.icons[iconname] = icon
+                log.info(f"Icon {iconname} loaded at path '{iconpath}'")
+
         shared.theme.font_family = "Outfit"
 
         self.mainwindow = MainWindow()
@@ -64,8 +74,13 @@ class App:
         self.mainwindow.hide()
 
         elapsed = perf_counter() - start
-        log.info(f"App is initialized in <fg.lightcyan>{round(elapsed, 3)}s</> (<fg.lightcyan>{round(elapsed*1000, 3)}ms</>)")
+        log.info(f"App is initialized in <fg.lightcyan>{round(elapsed, 3)}</>s (<fg.lightcyan>{round(elapsed*1000, 3)}</>ms)")
 
     def run(self) -> int:
         self.mainwindow.show()
+
+        # After the mainwindow is shown, all the layouts will be settled
+        # So this is the time to set the inital page displayed
+        self.mainwindow.change_page("Chats")
+
         return self.qapp.exec()

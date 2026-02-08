@@ -202,7 +202,7 @@ def log(level: LogLevel, message: str) -> None:
         else:
             indicator = "" 
 
-        log_prefix = f"{indicator}{level_colors[level]}[{level.name}]</>{' ' * gap[level]} │ <fg.darkgray>{now}</> │ "
+        log_prefix = f"{indicator}{level_colors[level]}[{level.name}]</>{' ' * gap[level]} <fg.darkgray>{now}</> "
         pure_log_prefix = _render_color_template(log_prefix, no_color=True)
         color_log_prefix = _render_color_template(log_prefix, no_color=False)
         rendered_log_prefix = color_log_prefix if target.colored else pure_log_prefix

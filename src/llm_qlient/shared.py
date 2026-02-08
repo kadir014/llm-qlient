@@ -10,11 +10,18 @@
 
 from typing import TYPE_CHECKING
 
+from freshqt.core import Theme
+
 if TYPE_CHECKING:
     from PyQt6.QtGui import QIcon
-    from freshqt.core import Theme
 
 
-theme: "Theme"
+################################################################################
+#                                                                              #
+#                             Global App Context                               #
+#                                                                              #
+################################################################################
+
+theme = Theme()
 
 icons: dict[str, "QIcon"] = {}

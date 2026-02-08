@@ -9,18 +9,40 @@
 """
 
 import sys
+import platform
 
 from llm_qlient.core import log
 from llm_qlient.app import App
 
 
+def log_specs() -> None:
+    """
+    Log system and platform specifications for debugging.
+    """
+
+    log.debug(f"Platform: {platform.platform()}")
+    log.debug(f"Arch: {platform.machine()}")
+    log.debug(f"Python: {platform.python_version()} {platform.python_compiler()}")
+
+
 def main() -> None:
+    """
+    Main entry point.
+    """
+
+    min_level = log.LogLevel.INFO
+    if "--debug" in sys.argv:
+        min_level = log.LogLevel.DEBUG
+
     log_file = open("llm-qlient.log", "w", encoding="utf-8")
-    log.targets.add(log.LogTarget(sys.stdout, colored=True, min_level=log.LogLevel.DEBUG))
-    log.targets.add(log.LogTarget(log_file, colored=False, min_level=log.LogLevel.DEBUG))
+    log.targets.add(log.LogTarget(sys.stdout, colored=True, min_level=min_level))
+    log.targets.add(log.LogTarget(log_file, colored=False, min_level=min_level))
+
+    log_specs()
 
     app = App()
     ret = app.run()
+    log.debug(f"App return code: {hex(ret)}")
 
     log_file.close()
     sys.exit(ret)

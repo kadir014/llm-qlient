@@ -1,5 +1,15 @@
-# llm-qlient
-Playground for local Large Language Models with a Qt-based desktop user interface.
+<br><br>
+<p align="center">
+  <img src="data/gh/llmqlientthumb_1920.png" width=600>
+</p>
+<hr>
+<p align="center">
+  <a href="https://github.com/kadir014/llm-qlient/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+  <img src="https://img.shields.io/badge/version-0.0.1-yellow">
+</p>
+<p align="center">
+Qt-based desktop user interface for interacting with local Large Language Models.
+</p>
 
 
 
