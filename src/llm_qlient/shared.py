@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING
 
 from freshqt.core import Theme
 
+from llm_qlient.core.cleaner import Cleaner
+
 if TYPE_CHECKING:
     from llm_qlient.ui.icon_manager import IconManager
 
@@ -25,3 +27,5 @@ if TYPE_CHECKING:
 theme = Theme()
 
 icons: "IconManager"
+
+cleaner = Cleaner()

@@ -8,7 +8,7 @@
 
 """
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot, QTimer, QThread
 from PyQt6.QtWidgets import QWidget, QHBoxLayout
 from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor
 from freshqt.core import TypographyType
@@ -16,6 +16,37 @@ from freshqt.widgets import Button, Divider, TypoLabel
 from freshqt.animation import Tween, Easing
 
 from llm_qlient import shared
+from llm_qlient.core import log
+from llm_qlient.core.utilization import get_utilization_summary, UtilizationSummary
+
+
+class UtilizationFetcher(QThread):
+
+    new_data = pyqtSignal(UtilizationSummary, name="new_data")
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.should_run = True
+        self.interval_sec = 2.0
+
+    def run(self) -> None:
+        log.info(f"<fg.blue>[Thread#{int(self.currentThreadId())}]</> Utilization fetcher started")
+
+        self.setPriority(QThread.Priority.LowestPriority)
+
+        while self.should_run:
+            util = get_utilization_summary()
+            self.new_data.emit(util)
+
+            # Skip the sleep if we can break out of loop
+            if not self.should_run:
+                break
+
+            # Sleep later so the first data is fetched instantly
+            self.msleep(int(self.interval_sec * 1000))
+
+        log.info(f"<fg.blue>[Thread#{int(self.currentThreadId())}]</> Utilization fetcher finished")
 
 
 class StatusBar(QWidget):
@@ -36,7 +67,33 @@ class StatusBar(QWidget):
 
         layout.addStretch()
 
-        self.utilization_lbl = TypoLabel("CPU: 0%     |     GPU: 0%     |     RAM: 15.1GB     |     VRAM: 11.8GB", type=TypographyType.CAPTION)
+        self.utilization_lbl = TypoLabel(type=TypographyType.CAPTION)
         self.utilization_lbl.color = "text_secondary"
         shared.theme.add_widget(self.utilization_lbl)
         layout.addWidget(self.utilization_lbl)
+
+        self.util_thrd = UtilizationFetcher()
+        self.util_thrd.new_data.connect(self._update_util_label)
+        self.util_thrd.start()
+
+        shared.cleaner.register(self.cleanup)
+
+    def cleanup(self) -> None:
+        self.util_thrd.should_run = False
+        self.util_thrd.wait()
+
+    @pyqtSlot(UtilizationSummary)
+    def _update_util_label(self, util: UtilizationSummary) -> None:
+        template = "CPU: {cpu}%     ┆     GPU: {gpu}%     ┆     RAM: {ram_used}GB     ┆     VRAM: {vram_used}GB"
+
+        rendered = template
+        rendered = rendered.replace("{cpu}", str(round(util.cpu * 100.0, 1)))
+        rendered = rendered.replace("{gpu}", str(round(util.gpu * 100.0, 1)))
+        rendered = rendered.replace("{ram_total}", str(round(util.ram_total / 1073741824.0, 1)))
+        rendered = rendered.replace("{ram_used}", str(round(util.ram_used / 1073741824.0, 1)))
+        rendered = rendered.replace("{ram_percent}", str(round(util.ram_percent * 100.0, 1)))
+        rendered = rendered.replace("{vram_total}", str(round(util.vram_total / 1073741824.0, 1)))
+        rendered = rendered.replace("{vram_used}", str(round(util.vram_used / 1073741824.0, 1)))
+        rendered = rendered.replace("{vram_percent}", str(round(util.vram_percent * 100.0, 1)))
+
+        self.utilization_lbl.setText(rendered)

@@ -16,6 +16,7 @@ from freshqt.widgets import Button, Divider
 from freshqt.animation import Tween, Easing
 
 from llm_qlient import shared
+from llm_qlient.core.models import Page
 
 
 class SideBar(QWidget):
@@ -45,43 +46,42 @@ class SideBar(QWidget):
 
         self.page_buttons: dict[str, Button] = {}
 
-        self.add_page_button("LLM Qlient", shared.icons.get("windowicon"))
+        self.add_page_button(Page("home", shared.icons.get("windowicon"), name="LLM Qlient"))
         self.add_divider()
 
-        self.page_buttons["LLM Qlient"].clicked.connect(self.__home_clicked)
-        self.page_buttons["LLM Qlient"].type = TypographyType.SUBTITLE
+        self.page_buttons["home"].clicked.connect(self.__home_clicked)
+        self.page_buttons["home"].type = TypographyType.SUBTITLE
 
     def update(self) -> None:
         super().update()
         self.__resize_tween.update()
         self.__cursor_tween.update()
 
-    def add_page_button(self, page_name: str, icon: str | QIcon) -> None:
+    def add_page_button(self, page: Page) -> None:
         """
         Add a new page button to the sidebar.
         
         Parameters
         ----------
-        page_name
-            Name of the page
-        icon
-            Button icon
+        page
+            Page to add a button of
         """
 
         btn = Button(variant=Button.Variant.GHOST)
         shared.theme.add_widget(btn)
         self.layout().addWidget(btn)
 
-        if isinstance(icon, str):
-            btn.icon_name = icon
+        if isinstance(page.icon, str):
+            btn.icon_name = page.icon
         else:
-            btn.setIcon(icon)
+            btn.setIcon(page.icon)
+
         btn.setIconSize(QSize(self.icon_size, self.icon_size))
         btn.setFixedSize(self.button_size, self.button_size)
         btn.border_radius = -1
         btn.text_alignment = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
 
-        self.page_buttons[page_name] = btn
+        self.page_buttons[page.id] = btn
 
     def add_divider(self) -> None:
         """ Add divider. """
@@ -90,14 +90,14 @@ class SideBar(QWidget):
         shared.theme.add_widget(dv)
         self.layout().addWidget(dv)
 
-    def change_cursor(self, page_name: str) -> None:
+    def change_cursor(self, page: Page) -> None:
         """
-        Move cursor to button with given page name.
+        Move cursor to given page button.
         
         Parameters
         ----------
-        page_name
-            Page name of the button to move the cursor to
+        page
+            The page of the button to move the cursor to
         """
 
         prev_widget = self.__cursor_widget
@@ -107,7 +107,7 @@ class SideBar(QWidget):
         else:
             prev_y = prev_widget.y()
 
-        self.__cursor_widget = self.page_buttons[page_name]
+        self.__cursor_widget = self.page_buttons[page.id]
         curr_y = self.__cursor_widget.y()
 
         # Same widget, no need to play moving animation

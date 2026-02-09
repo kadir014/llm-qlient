@@ -13,6 +13,7 @@ import platform
 from time import perf_counter
 from pathlib import Path
 
+from PyQt6.QtCore import qInstallMessageHandler, QtMsgType, QMessageLogContext
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QFont, QFontDatabase, QIcon
 from freshqt.assets import HEROICONS
@@ -32,6 +33,9 @@ class App:
 
     def __init__(self) -> None:
         start = perf_counter()
+
+        # Redirect Qt's messages to our logger
+        qInstallMessageHandler(self.handle_qt_log)
 
         ROOT = Path.cwd()
 
@@ -80,11 +84,26 @@ class App:
         elapsed = perf_counter() - start
         log.info(f"App is initialized in <fg.lightcyan>{round(elapsed, 3)}</>s (<fg.lightcyan>{round(elapsed*1000, 3)}</>ms)")
 
+    def handle_qt_log(self, type_: QtMsgType, ctx: QMessageLogContext, msg: str) -> None:
+        level_map = {
+            QtMsgType.QtDebugMsg: log.LogLevel.DEBUG,
+            QtMsgType.QtInfoMsg: log.LogLevel.INFO,
+            QtMsgType.QtSystemMsg: log.LogLevel.INFO,
+            QtMsgType.QtWarningMsg: log.LogLevel.WARNING,
+            QtMsgType.QtCriticalMsg: log.LogLevel.ERROR,
+            QtMsgType.QtFatalMsg: log.LogLevel.FATAL
+        }
+
+        new_msg = f"<fg.green>[Qt]</> {msg}"
+
+        log.log(level_map[type_], new_msg)
+
     def run(self) -> int:
         self.mainwindow.show()
 
         # After the mainwindow is shown, all the layouts will be settled
         # So this is the time to set the inital page displayed
-        self.mainwindow.change_page("Chats")
+        # otherwise certain animations will not work
+        self.mainwindow.change_page(self.mainwindow.pages[0].id)
 
         return self.qapp.exec()
