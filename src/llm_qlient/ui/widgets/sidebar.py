@@ -44,20 +44,20 @@ class SideBar(QWidget):
         layout.setContentsMargins(self.padding, self.padding, self.padding, self.padding)
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        self.page_buttons: dict[str, Button] = {}
+        self.page_buttons: dict[Page, Button] = {}
 
-        self.add_page_button(Page("home", shared.icons.get("windowicon"), name="LLM Qlient"))
+        home_btn = self.add_page_button(Page("home", shared.icons.get("windowicon"), name="LLM Qlient"))
         self.add_divider()
 
-        self.page_buttons["home"].clicked.connect(self.__home_clicked)
-        self.page_buttons["home"].type = TypographyType.SUBTITLE
+        home_btn.clicked.connect(self.__home_clicked)
+        home_btn.type = TypographyType.SUBTITLE
 
     def update(self) -> None:
-        super().update()
         self.__resize_tween.update()
         self.__cursor_tween.update()
+        super().update()
 
-    def add_page_button(self, page: Page) -> None:
+    def add_page_button(self, page: Page) -> Button:
         """
         Add a new page button to the sidebar.
         
@@ -73,7 +73,7 @@ class SideBar(QWidget):
 
         if isinstance(page.icon, str):
             btn.icon_name = page.icon
-        else:
+        elif isinstance(page.icon, QIcon):
             btn.setIcon(page.icon)
 
         btn.setIconSize(QSize(self.icon_size, self.icon_size))
@@ -81,7 +81,8 @@ class SideBar(QWidget):
         btn.border_radius = -1
         btn.text_alignment = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
 
-        self.page_buttons[page.id] = btn
+        self.page_buttons[page] = btn
+        return btn
 
     def add_divider(self) -> None:
         """ Add divider. """
@@ -107,7 +108,7 @@ class SideBar(QWidget):
         else:
             prev_y = prev_widget.y()
 
-        self.__cursor_widget = self.page_buttons[page.id]
+        self.__cursor_widget = self.page_buttons[page]
         curr_y = self.__cursor_widget.y()
 
         # Same widget, no need to play moving animation
@@ -135,9 +136,9 @@ class SideBar(QWidget):
             self.__open = True
             self.__resize_tween.play(0.2, easing=Easing.EASE_IN_SINE)
 
-            for page_name in self.page_buttons:
-                button = self.page_buttons[page_name]
-                button.text = page_name
+            for page, button in self.page_buttons.items():
+                button = self.page_buttons[page]
+                button.text = page.name
 
         self.update()
 
@@ -171,8 +172,7 @@ class SideBar(QWidget):
         # Update resizing animation
         self.setFixedWidth(round(self.__resize_tween.value + self.padding * 2))
 
-        for page_name in self.page_buttons:
-            button = self.page_buttons[page_name]
+        for page, button in self.page_buttons.items():
             button.setFixedWidth(round(self.__resize_tween.value))
 
         if self.__resize_tween.is_started or self.__cursor_tween.is_started:
@@ -180,6 +180,5 @@ class SideBar(QWidget):
 
     def __resize_finished(self) -> None:
         if not self.__open:
-            for page_name in self.page_buttons:
-                button = self.page_buttons[page_name]
+            for page, button in self.page_buttons.items():
                 button.text = ""

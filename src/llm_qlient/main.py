@@ -43,7 +43,7 @@ def main() -> None:
 
     app = App()
     ret = app.run()
-    log.debug(f"App return code: {hex(ret)}")
+    log.debug(f"App return code: <fg.lightcyan>{hex(ret)}</>")
 
     shared.cleaner.cleanup()
 

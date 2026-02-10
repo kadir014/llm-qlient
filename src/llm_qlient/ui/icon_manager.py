@@ -47,7 +47,7 @@ class IconManager(BaseIconManager):
                 icon_name = p.stem
                 icon = QIcon(str(p.absolute()))
                 self.__cache[icon_name] = {None: icon}
-                log.info(f"Icon {icon_name} loaded at path '{p}'")
+                log.info(f"Icon <fg.yellow>{icon_name}</> loaded at path <fg.darkgray>'{p}'</>")
 
     @staticmethod
     def colorize_icon(icon: QIcon, color: QColor) -> QIcon:

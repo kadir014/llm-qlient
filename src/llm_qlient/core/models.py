@@ -8,6 +8,8 @@
 
 """
 
+from typing import Any
+
 from dataclasses import dataclass
 
 from PyQt6.QtGui import QIcon
@@ -15,6 +17,34 @@ from PyQt6.QtGui import QIcon
 from llm_qlient.ui.pages.base_view import BaseView
 
 
+def immutable_fields(*field_names: str):
+    """
+    Make certain fields immutable for a dataclass.
+
+    This relies on `hasattr`, so assignment at initialization is allowed
+    but reassignment after is not allowed.
+
+    Parameters
+    ----------
+    field_names
+        Names of the dataclass fields to make immutable
+    """
+
+    def wrapper(cls):
+        original_setattr = cls.__setattr__
+
+        def __setattr__(self, name: str, value: Any) -> None:
+            if name in field_names and hasattr(self, name):
+                raise AttributeError(f"{name} is immutable")
+            original_setattr(self, name, value)
+
+        cls.__setattr__ = __setattr__
+        return cls
+
+    return wrapper
+
+
+@immutable_fields("id")
 @dataclass
 class Page:
     """
@@ -23,7 +53,7 @@ class Page:
     Attributes
     ----------
     id
-        Internal module name
+        Internal module representation
     name
         Display name
         Inferred from id if not given
@@ -34,9 +64,17 @@ class Page:
     """
 
     id: str
-    icon: str | QIcon
+    icon: str | QIcon | None = None
     name: str = ""
     view: BaseView | None = None
 
     def __post_init__(self) -> None:
-        self.name = self.id.capitalize()
+        if not self.name:
+            self.name = self.id.capitalize()
+
+    def __eq__(self, other: Any) -> bool:
+       print("__eq__", other)
+       return isinstance(other, Page) and self.id == other.id
+
+    def __hash__(self) -> int:
+        return hash(self.id)

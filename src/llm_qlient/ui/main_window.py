@@ -61,10 +61,10 @@ class MainWindow(QWidget, Themeable):
         for page in self.pages:
             self.sidebar.add_page_button(page)
         
-        self.sidebar.layout().insertStretch(self.sidebar.layout().count() - 2)
+        self.sidebar.layout().insertStretch(self.sidebar.layout().count() - 1)
 
         for page in self.pages:
-            button = self.sidebar.page_buttons[page.id]
+            button = self.sidebar.page_buttons[page]
             button.clicked.connect(partial(self.change_page, page.id))
 
         dv = Divider(margin=1, orientation=Qt.Orientation.Vertical)
@@ -80,6 +80,11 @@ class MainWindow(QWidget, Themeable):
         self.page_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         content_lyt.addWidget(self.page_area)
 
+        self.page_area_lyt = QVBoxLayout()
+        self.page_area_lyt.setContentsMargins(0, 0, 0, 0)
+        self.page_area_lyt.setSpacing(0)
+        self.page_area.setLayout(self.page_area_lyt)
+
         dv = Divider(margin=1, orientation=Qt.Orientation.Horizontal)
         shared.theme.add_widget(dv)
         content_lyt.addWidget(dv)
@@ -90,7 +95,7 @@ class MainWindow(QWidget, Themeable):
         self.init_pages()
 
     def update_theme(self, theme: Theme) -> None:
-        log.info(f"Changed app theme to {theme.palette.name}")
+        log.info(f"Changed app theme to <fg.magenta>{theme.palette.name}</>")
 
         if platform.system() == "Windows":
             ret = change_titlebar_theme(self, theme.palette.is_dark)
@@ -125,10 +130,12 @@ class MainWindow(QWidget, Themeable):
         page = self.get_page_from_id(page_id)
 
         if self.current_page is not None:
-            self.sidebar.page_buttons[self.current_page.id].variant = Button.Variant.GHOST
+            self.current_page.view.hide()
+            self.sidebar.page_buttons[self.current_page].variant = Button.Variant.GHOST
 
         self.current_page = page
-        self.sidebar.page_buttons[page_id].variant = Button.Variant.SECONDARY
+        self.current_page.view.show()
+        self.sidebar.page_buttons[page].variant = Button.Variant.SECONDARY
 
         self.sidebar.change_cursor(page)
         self.statusbar.page_name_lbl.setText(f"#{page.name}")
@@ -138,4 +145,7 @@ class MainWindow(QWidget, Themeable):
 
         for page in self.pages:
             view = importlib.import_module(f"llm_qlient.ui.pages.{page.id}.view")
-            v = view.View()
+            page.view = view.View()
+            page.view.hide()
+
+            self.page_area_lyt.addWidget(page.view)
