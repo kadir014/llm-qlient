@@ -60,11 +60,6 @@ class App:
             font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
             self.qapp.setFont(font)
 
-        # This has a weird coupling, the first one is for more comfortable use
-        # across this project, the second is for the themed widgets
-        shared.icons = IconManager()
-        shared.theme.icons = shared.icons
-
         # SVG icons have to be loaded before any raster icons so Qt can select proper icon engine
         for iconname in HEROICONS:
             iconpath = HEROICONS[iconname]
@@ -105,5 +100,9 @@ class App:
         # So this is the time to set the inital page displayed
         # otherwise certain animations will not work
         self.mainwindow.change_page(self.mainwindow.pages[0].id)
+
+        # Emit settings signal once so all widgets listening to setting
+        # changes can initialize themselves
+        shared.settings.changed.emit()
 
         return self.qapp.exec()

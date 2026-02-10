@@ -8,14 +8,16 @@
 
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from freshqt.core import Theme
 
+from llm_qlient.ui.icon_manager import IconManager
 from llm_qlient.core.cleaner import Cleaner
+from llm_qlient.core.settings import Settings
 
 if TYPE_CHECKING:
-    from llm_qlient.ui.icon_manager import IconManager
+    ...
 
 
 ################################################################################
@@ -26,6 +28,20 @@ if TYPE_CHECKING:
 
 theme = Theme()
 
-icons: "IconManager"
+icons = IconManager()
+theme.icons = icons
 
 cleaner = Cleaner()
+
+
+################################################################################
+#                                                                              #
+#                               Configuration                                  #
+#                                                                              #
+################################################################################
+
+settings = Settings({
+    "system_metrics_show": True,
+    "system_metrics_interval": 2.0,
+    "system_metrics_formatter": "CPU: {cpu}%     ┆     GPU: {gpu}%     ┆     RAM: {ram_used}GB     ┆     VRAM: {vram_used}GB"
+})

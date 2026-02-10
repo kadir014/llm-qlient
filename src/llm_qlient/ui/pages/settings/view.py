@@ -9,10 +9,10 @@
 """
 
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QLineEdit
 from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor
 from freshqt.core import TypographyType
-from freshqt.widgets import Button, Divider, TypoLabel, Switch
+from freshqt.widgets import Button, Divider, TypoLabel, Switch, LineEdit
 from freshqt.animation import Tween, Easing
 
 from llm_qlient import shared
@@ -49,11 +49,26 @@ class View(BaseView):
 
         self.content_lyt.addSpacing(9)
 
-        self.setting("Show system metrics", switch=True)
+        self.setting("Show system metrics", "system_metrics_show")
 
-        self.setting_desc("System metrics update frequency", "Controls how often the system metrics are refreshed, in seconds.")
+        self.setting_desc(
+            "System metrics update frequency",
+            "Controls how often the system metrics are refreshed, in seconds.",
+            "system_metrics_interval"
+        )
 
-        self.setting_desc("System metrics display format", "Customize the text shown for system metrics in the status bar. For example <code>\"CPU usage: {cpu}%\"</code>.")
+        self.setting_desc(
+            "System metrics display format",
+            "Customize the text shown for system metrics in the status bar. For example <code>\"CPU usage: {cpu}%\"</code>.",
+            "system_metrics_formatter"
+        )
+
+        shared.settings.changed.connect(self._settings_changed)
+
+    def _settings_changed(self) -> None:
+        # for key, switch in self.switches.items():
+        #     switch.on = shared.settings[key]
+        ...
 
     def h1(self, text: str) -> None:
         lbl = TypoLabel(text, TypographyType.TITLE1)
@@ -65,7 +80,7 @@ class View(BaseView):
         shared.theme.add_widget(lbl)
         self.content_lyt.addWidget(lbl)
 
-    def setting(self, text, switch: bool = False) -> None:
+    def setting(self, text: str, setting: str) -> None:
         setting_lyt = QHBoxLayout()
         setting_lyt.setContentsMargins(0, 0, 0, 0)
         self.content_lyt.addLayout(setting_lyt)
@@ -74,13 +89,17 @@ class View(BaseView):
         shared.theme.add_widget(lbl)
         setting_lyt.addWidget(lbl, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        if switch:
-            sw = Switch()
+        if isinstance(shared.settings[setting], bool):
+            sw = Switch(on=shared.settings[setting])
             sw.setFixedSize(55, 25)
             shared.theme.add_widget(sw)
             setting_lyt.addWidget(sw, alignment=Qt.AlignmentFlag.AlignRight)
 
-    def setting_desc(self, text: str, desc: str, switch: bool = False) -> None:
+            @sw.toggled.connect
+            def sw_slot():
+                shared.settings[setting] = sw.on
+
+    def setting_desc(self, text: str, desc: str, setting: str, float_only: bool = True) -> None:
         setting_lyt = QHBoxLayout()
         setting_lyt.setContentsMargins(0, 0, 0, 0)
         self.content_lyt.addLayout(setting_lyt)
@@ -99,8 +118,38 @@ class View(BaseView):
         shared.theme.add_widget(lbl)
         desc_lyt.addWidget(lbl, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        if switch:
-            sw = Switch()
+        if isinstance(shared.settings[setting], bool):
+            sw = Switch(on=shared.settings[setting])
             sw.setFixedSize(55, 25)
             shared.theme.add_widget(sw)
             setting_lyt.addWidget(sw, alignment=Qt.AlignmentFlag.AlignRight)
+
+            @sw.toggled.connect
+            def sw_slot():
+                shared.settings[setting] = sw.on
+
+        elif isinstance(shared.settings[setting], str):
+            line = LineEdit(shared.settings[setting])
+            shared.theme.add_widget(line)
+            desc_lyt.addWidget(line)
+
+            @line.textChanged.connect
+            def line_slot():
+                shared.settings[setting] = line.text()
+
+        elif isinstance(shared.settings[setting], float):
+            line = LineEdit(str(shared.settings[setting]))
+            shared.theme.add_widget(line)
+            desc_lyt.addWidget(line)
+
+            @line.textChanged.connect
+            def line_slot():
+                value = line.text()
+                
+                try:
+                    value = float(value)
+                except ValueError:
+                    value = 0.0
+
+                shared.settings[setting] = value
+                line.setText(str(value))

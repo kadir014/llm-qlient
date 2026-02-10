@@ -36,8 +36,9 @@ class UtilizationFetcher(QThread):
         self.setPriority(QThread.Priority.LowestPriority)
 
         while self.should_run:
-            util = get_utilization_summary()
-            self.new_data.emit(util)
+            if shared.settings["system_metrics_show"]:
+                util = get_utilization_summary()
+                self.new_data.emit(util)
 
             # Skip the sleep if we can break out of loop
             if not self.should_run:
@@ -76,6 +77,7 @@ class StatusBar(QWidget):
         self.util_thrd.new_data.connect(self._update_util_label)
         self.util_thrd.start()
 
+        shared.settings.changed.connect(self._settings_changed)
         shared.cleaner.register(self.cleanup)
 
     def cleanup(self) -> None:
@@ -84,7 +86,7 @@ class StatusBar(QWidget):
 
     @pyqtSlot(UtilizationSummary)
     def _update_util_label(self, util: UtilizationSummary) -> None:
-        template = "CPU: {cpu}%     ┆     GPU: {gpu}%     ┆     RAM: {ram_used}GB     ┆     VRAM: {vram_used}GB"
+        template = shared.settings["system_metrics_formatter"]
 
         rendered = template
         rendered = rendered.replace("{cpu}", str(round(util.cpu * 100.0, 1)))
@@ -97,3 +99,7 @@ class StatusBar(QWidget):
         rendered = rendered.replace("{vram_percent}", str(round(util.vram_percent * 100.0, 1)))
 
         self.utilization_lbl.setText(rendered)
+
+    def _settings_changed(self) -> None:
+        self.utilization_lbl.setVisible(shared.settings["system_metrics_show"])
+        self.util_thrd.interval_sec = float(shared.settings["system_metrics_interval"])
