@@ -36,6 +36,7 @@ class SideBar(QWidget):
 
         self.__cursor_tween = Tween()
         self.__cursor_widget: QWidget | None = None
+        self.__cursor_page: Page | None = None
 
         self.setFixedWidth(self.button_size + self.padding * 2)
 
@@ -91,7 +92,7 @@ class SideBar(QWidget):
         shared.theme.add_widget(dv)
         self.layout().addWidget(dv)
 
-    def change_cursor(self, page: Page) -> None:
+    def change_cursor(self, page: Page, play_anim: bool = True) -> None:
         """
         Move cursor to given page button.
         
@@ -99,7 +100,12 @@ class SideBar(QWidget):
         ----------
         page
             The page of the button to move the cursor to
+        play_anim
+            Play the cursor movement animation
         """
+
+        # Needed to fix animation when resizing the window
+        self.__cursor_page = page
 
         prev_widget = self.__cursor_widget
         
@@ -112,12 +118,12 @@ class SideBar(QWidget):
         curr_y = self.__cursor_widget.y()
 
         # Same widget, no need to play moving animation
-        if self.__cursor_widget is prev_widget:
+        if self.__cursor_widget is prev_widget and play_anim:
             return
 
         # If prev_y is 0, it means there has not been a previous widget
         # So just don't play the animation at all
-        if prev_y == 0.0:
+        if prev_y == 0.0 or not play_anim:
             self.__cursor_tween.value = curr_y
             self.update()
             return
@@ -182,3 +188,9 @@ class SideBar(QWidget):
         if not self.__open:
             for page, button in self.page_buttons.items():
                 button.text = ""
+
+    def resizeEvent(self, e) -> None:
+        if not self.__cursor_tween.is_started and self.__cursor_page is not None:
+            self.change_cursor(self.__cursor_page, False)
+
+        super().resizeEvent(e)

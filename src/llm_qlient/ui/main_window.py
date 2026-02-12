@@ -33,7 +33,7 @@ class MainWindow(QWidget, Themeable):
     def __init__(self) -> None:
         super().__init__()
 
-        self.setWindowTitle("LLM Qlient")
+        self.setWindowTitle(f"LLM Qlient v{shared.__version__}")
         self.setWindowIcon(shared.icons.get("windowicon"))
         self.resize(1280, 720)
         self.setMinimumSize(640, 360)
@@ -80,6 +80,9 @@ class MainWindow(QWidget, Themeable):
         self.page_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         content_lyt.addWidget(self.page_area)
 
+        self.setObjectName("bg_primary")
+        self.page_area.setObjectName("bg_primary")
+
         self.page_area_lyt = QVBoxLayout()
         self.page_area_lyt.setContentsMargins(0, 0, 0, 0)
         self.page_area_lyt.setSpacing(0)
@@ -106,9 +109,51 @@ class MainWindow(QWidget, Themeable):
         else:
             log.info("Titlebar themeing is only supported on Windows currently.")
 
-        self.setStyleSheet(f"background-color: {theme.qss(theme.palette.background_primary)};")
+        self.page_area.setStyleSheet(f"QWidget#bg_primary {{background-color: {theme.qss(theme.palette.background_secondary)};}}")
 
-        self.page_area.setStyleSheet(f"background-color: {theme.qss(theme.palette.background_secondary)};")
+        self.setStyleSheet(f"""
+            QWidget#bg_primary {{
+                background-color: {theme.qss(theme.palette.background_primary)};
+            }}
+
+            QScrollBar:vertical {{
+                background: transparent;
+                width: 6px;
+                margin: 0px 0px 0px 0px;
+                border: none;
+            }}
+
+            QScrollBar::handle:vertical {{
+                min-height: 0px;
+                width: 6px;
+                margin: 0px 0px 0px 0px;
+                background: {theme.qss(theme.palette.text_primary)};
+                border: 0px solid black;
+                border-radius: 3px;
+                opacity: 255;
+            }}
+
+            QScrollBar::handle:hover:vertical {{
+                background: {theme.qss(theme.palette.text_primary)}
+            }}
+
+            QScrollBar::add-line:vertical {{
+                height: 0px;
+            }}
+
+            QScrollBar::sub-line:vertical {{
+                height: 0px;
+            }}
+
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                background: none;
+                height: 0px;
+            }}
+
+            QLabel, QTextEdit {{
+                selection-background-color: {theme.qss(theme.palette.text_selection)};
+            }}
+        """)
 
     def get_page_from_id(self, page_id: str) -> Page | None:
         """ Get page dict from name. None if not found. """

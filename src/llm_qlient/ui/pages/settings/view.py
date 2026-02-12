@@ -8,12 +8,16 @@
 
 """
 
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QLineEdit
+import platform
+
+from PyQt6.QtCore import Qt, QSize, QT_VERSION_STR, PYQT_VERSION_STR
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QLineEdit, QScrollArea
 from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor
 from freshqt.core import TypographyType
-from freshqt.widgets import Button, Divider, TypoLabel, Switch, LineEdit
+from freshqt.core import __version__ as __freshqt_version__
+from freshqt.widgets import Button, Divider, TypoLabel, Switch, LineEdit, BadgeLabel
 from freshqt.animation import Tween, Easing
+from panllm import __version__ as __panllm_version__
 
 from llm_qlient import shared
 from llm_qlient.core import log
@@ -24,20 +28,25 @@ class View(BaseView):
     def __init__(self) -> None:
         super().__init__()
 
-        #Load defaults
-        #Load user settings (if they exist)
-        #Merge them
-
         outer_layout = QVBoxLayout()
         outer_layout.setContentsMargins(0, 0, 0, 0)
-        outer_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.setLayout(outer_layout)
 
         content = QWidget()
         content.setMaximumWidth(880)
         content.setMinimumWidth(620)
-        content.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        outer_layout.addWidget(content)
+
+        content_scroller = QScrollArea()
+        content_scroller.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        content_scroller.setWidget(content)
+        content_scroller.setWidgetResizable(True)
+        content_scroller.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        outer_layout.addWidget(content_scroller)
+
+        content_scroller.setStyleSheet(f"""
+            background: transparent;
+            border: none;
+        """)
 
         self.content_lyt = QVBoxLayout()
         self.content_lyt.setContentsMargins(0, 30, 0, 0)
@@ -63,12 +72,7 @@ class View(BaseView):
             "system_metrics_formatter"
         )
 
-        shared.settings.changed.connect(self._settings_changed)
-
-    def _settings_changed(self) -> None:
-        # for key, switch in self.switches.items():
-        #     switch.on = shared.settings[key]
-        ...
+        self.version_section()
 
     def h1(self, text: str) -> None:
         lbl = TypoLabel(text, TypographyType.TITLE1)
@@ -99,7 +103,7 @@ class View(BaseView):
             def sw_slot():
                 shared.settings[setting] = sw.on
 
-    def setting_desc(self, text: str, desc: str, setting: str, float_only: bool = True) -> None:
+    def setting_desc(self, text: str, desc: str, setting: str | None = None) -> None:
         setting_lyt = QHBoxLayout()
         setting_lyt.setContentsMargins(0, 0, 0, 0)
         self.content_lyt.addLayout(setting_lyt)
@@ -118,38 +122,73 @@ class View(BaseView):
         shared.theme.add_widget(lbl)
         desc_lyt.addWidget(lbl, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        if isinstance(shared.settings[setting], bool):
-            sw = Switch(on=shared.settings[setting])
-            sw.setFixedSize(55, 25)
-            shared.theme.add_widget(sw)
-            setting_lyt.addWidget(sw, alignment=Qt.AlignmentFlag.AlignRight)
+        if setting is not None:
+            if isinstance(shared.settings[setting], bool):
+                sw = Switch(on=shared.settings[setting])
+                sw.setFixedSize(55, 25)
+                shared.theme.add_widget(sw)
+                setting_lyt.addWidget(sw, alignment=Qt.AlignmentFlag.AlignRight)
 
-            @sw.toggled.connect
-            def sw_slot():
-                shared.settings[setting] = sw.on
+                @sw.toggled.connect
+                def sw_slot():
+                    shared.settings[setting] = sw.on
 
-        elif isinstance(shared.settings[setting], str):
-            line = LineEdit(shared.settings[setting])
-            shared.theme.add_widget(line)
-            desc_lyt.addWidget(line)
+            elif isinstance(shared.settings[setting], str):
+                line = LineEdit(shared.settings[setting])
+                shared.theme.add_widget(line)
+                desc_lyt.addWidget(line)
 
-            @line.textChanged.connect
-            def line_slot():
-                shared.settings[setting] = line.text()
+                @line.textChanged.connect
+                def line_slot():
+                    shared.settings[setting] = line.text()
 
-        elif isinstance(shared.settings[setting], float):
-            line = LineEdit(str(shared.settings[setting]))
-            shared.theme.add_widget(line)
-            desc_lyt.addWidget(line)
+            elif isinstance(shared.settings[setting], float):
+                line = LineEdit(str(shared.settings[setting]))
+                shared.theme.add_widget(line)
+                desc_lyt.addWidget(line)
 
-            @line.textChanged.connect
-            def line_slot():
-                value = line.text()
-                
-                try:
-                    value = float(value)
-                except ValueError:
-                    value = 0.0
+                @line.textChanged.connect
+                def line_slot():
+                    value = line.text()
+                    
+                    try:
+                        value = float(value)
+                    except ValueError:
+                        value = 0.0
 
-                shared.settings[setting] = value
-                line.setText(str(value))
+                    shared.settings[setting] = value
+                    line.setText(str(value))
+        
+    def version_section(self) -> None:
+        desc_lyt = QVBoxLayout()
+        desc_lyt.setContentsMargins(0, 0, 0, 0)
+        desc_lyt.setSpacing(10)
+        self.content_lyt.addLayout(desc_lyt)
+
+        lbl = TypoLabel("Version information", TypographyType.SUBTITLE)
+        shared.theme.add_widget(lbl)
+        desc_lyt.addWidget(lbl, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        versions = (
+            ("Python", f"{platform.python_version()} - {platform.python_compiler()}"),
+            ("Qt", QT_VERSION_STR),
+            ("PyQt", PYQT_VERSION_STR),
+            ("FreshQt", __freshqt_version__),
+            ("PanLLM", __panllm_version__),
+            ("LLM Qlient", shared.__version__)
+        )
+        for name, version in versions:
+            version_lyt = QHBoxLayout()
+            version_lyt.setContentsMargins(0, 0, 0, 0)
+            version_lyt.setAlignment(Qt.AlignmentFlag.AlignLeft)
+            desc_lyt.addLayout(version_lyt)
+
+            lbl = TypoLabel(name, TypographyType.BODY)
+            lbl.color = "text_secondary"
+            shared.theme.add_widget(lbl)
+            version_lyt.addWidget(lbl)
+
+            lbl = BadgeLabel(version, color="brand_primary")
+            lbl.border_radius = 7
+            shared.theme.add_widget(lbl)
+            version_lyt.addWidget(lbl)

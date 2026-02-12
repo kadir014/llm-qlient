@@ -12,6 +12,11 @@ import sys
 import platform
 from datetime import datetime
 
+# IMPORTANT!
+# llama_cpp_python has to be imported before any external dependencies
+# otherwise OSError occurs upon llama_backend_init()
+import panllm
+
 from llm_qlient import shared
 from llm_qlient.core import log
 from llm_qlient.app import App
@@ -45,7 +50,10 @@ def main() -> None:
     ret = app.run()
     log.debug(f"App return code: <fg.lightcyan>{hex(ret)}</>")
 
-    shared.cleaner.cleanup()
+    shared.cleanup.emit()
+
+    if shared.model is not None:
+        shared.model.release()
 
     log_file.close()
     sys.exit(ret)

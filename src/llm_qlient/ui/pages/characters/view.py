@@ -12,7 +12,7 @@ from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtWidgets import QWidget, QVBoxLayout
 from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor
 from freshqt.core import TypographyType
-from freshqt.widgets import Button, Divider
+from freshqt.widgets import Button, Divider, TypoLabel
 from freshqt.animation import Tween, Easing
 
 from llm_qlient import shared
@@ -24,4 +24,15 @@ class View(BaseView):
     def __init__(self) -> None:
         super().__init__()
 
-        self.setStyleSheet("background-color: #ff0000;")
+        outer_layout = QVBoxLayout()
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setLayout(outer_layout)
+
+        lbl = TypoLabel("🚧 This page is under construction.", type=TypographyType.LARGE_TITLE)
+        shared.theme.add_widget(lbl)
+        outer_layout.addWidget(lbl)
+
+        lbl = TypoLabel("Come back later!", type=TypographyType.BODY)
+        shared.theme.add_widget(lbl)
+        outer_layout.addWidget(lbl, alignment=Qt.AlignmentFlag.AlignHCenter)

@@ -78,7 +78,7 @@ class StatusBar(QWidget):
         self.util_thrd.start()
 
         shared.settings.changed.connect(self._settings_changed)
-        shared.cleaner.register(self.cleanup)
+        shared.cleanup.connect(self.cleanup)
 
     def cleanup(self) -> None:
         self.util_thrd.should_run = False

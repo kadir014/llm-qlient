@@ -35,7 +35,7 @@ class App:
         start = perf_counter()
 
         # Redirect Qt's messages to our logger
-        qInstallMessageHandler(self.handle_qt_log)
+        qInstallMessageHandler(self._handle_qt_log)
 
         ROOT = Path.cwd()
 
@@ -79,7 +79,7 @@ class App:
         elapsed = perf_counter() - start
         log.info(f"App is initialized in <fg.lightcyan>{round(elapsed, 3)}</>s (<fg.lightcyan>{round(elapsed*1000, 3)}</>ms)")
 
-    def handle_qt_log(self, type_: QtMsgType, ctx: QMessageLogContext, msg: str) -> None:
+    def _handle_qt_log(self, type_: QtMsgType, ctx: QMessageLogContext, msg: str) -> None:
         level_map = {
             QtMsgType.QtDebugMsg: log.LogLevel.DEBUG,
             QtMsgType.QtInfoMsg: log.LogLevel.INFO,
