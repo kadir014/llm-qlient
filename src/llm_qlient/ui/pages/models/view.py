@@ -133,6 +133,8 @@ class ModelPanel(QWidget, Themeable):
         self.type_lbl.setText(model_type.upper())
     
     def paintEvent(self, e) -> None:
+        if self.__theme is None: return
+
         pt = QPainter(self)
         pt.setRenderHint(QPainter.RenderHint.Antialiasing, on=True)
 

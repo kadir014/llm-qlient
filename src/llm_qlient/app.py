@@ -21,9 +21,8 @@ from freshqt.assets import HEROICONS
 from llm_qlient import shared
 from llm_qlient.core import log
 from llm_qlient.ui.main_window import MainWindow
-from llm_qlient.ui.icon_manager import IconManager
 
-from freshqt.palettes.catppuccin import UI_CATPPUCCIN_MOCHA
+from freshqt.palettes.catppuccin import UI_CATPPUCCIN_MOCHA, UI_CATPPUCCIN_LATTE
 
 
 class App:
@@ -61,12 +60,8 @@ class App:
             self.qapp.setFont(font)
 
         # SVG icons have to be loaded before any raster icons so Qt can select proper icon engine
-        for iconname in HEROICONS:
-            iconpath = HEROICONS[iconname]
-            icon = QIcon(str(iconpath.absolute()))
-            shared.icons[iconname] = icon
-            log.info(f"Icon {iconname} loaded at path '{iconpath}'")
-
+        for icon_path in HEROICONS.keys():
+            shared.icons.load_single(icon_path)
         shared.icons.load(ROOT / "data" / "icons")
 
         shared.theme.font_family = "Outfit"

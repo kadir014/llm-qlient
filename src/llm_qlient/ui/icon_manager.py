@@ -15,6 +15,7 @@ from PyQt6.QtGui import QIcon, QPainter, QColor, QPixmap
 from freshqt.core import BaseIconManager
 
 from llm_qlient.core import log
+from llm_qlient.core.typing import PathLike
 
 
 class IconManager(BaseIconManager):
@@ -37,17 +38,28 @@ class IconManager(BaseIconManager):
             self.__cache[name][rgb] = colored
             return colored
         
-    def load(self, path: Path) -> None:
-        """ Load the icons in the given path. """
+    def load_single(self, path: PathLike) -> None:
+        """ Load a single icon at given path. """
+
+        path = Path(path)
+
+        icon_name = path.stem
+        icon = QIcon(str(path.absolute()))
+        self.__cache[icon_name] = {None: icon}
+        log.info(f"Icon <fg.yellow>{icon_name}</> loaded at path <fg.darkgray>'{path}'</>")
+        
+    def load(self, path: PathLike) -> None:
+        """ Load all icons in the given directory path. """
+
+        path = Path(path)
+
+        if not path.is_dir():
+            log.error(f"Given path <fg.yellow>{path}</> for IconManager.load is not a directory")
+            return
 
         for _, _, files in path.walk():
             for name in files:
-                p = path / name
-
-                icon_name = p.stem
-                icon = QIcon(str(p.absolute()))
-                self.__cache[icon_name] = {None: icon}
-                log.info(f"Icon <fg.yellow>{icon_name}</> loaded at path <fg.darkgray>'{p}'</>")
+                self.load_single(path / name)
 
     @staticmethod
     def colorize_icon(icon: QIcon, color: QColor) -> QIcon:

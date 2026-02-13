@@ -9,7 +9,7 @@
 """
 
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtWidgets import QWidget, QVBoxLayout
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QSizePolicy
 from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor
 from freshqt.core import TypographyType
 from freshqt.widgets import Button, Divider, TypoLabel
@@ -18,6 +18,7 @@ from freshqt.animation import Tween, Easing
 from llm_qlient import shared
 from llm_qlient.core import log
 from llm_qlient.ui.pages.base_view import BaseView
+from llm_qlient.ui.pages.chats.conversation import ConversationView
 
 
 class View(BaseView):
@@ -26,13 +27,11 @@ class View(BaseView):
 
         outer_layout = QVBoxLayout()
         outer_layout.setContentsMargins(0, 0, 0, 0)
-        outer_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        outer_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.setLayout(outer_layout)
 
-        lbl = TypoLabel("🚧 This page is under construction.", type=TypographyType.LARGE_TITLE)
-        shared.theme.add_widget(lbl)
-        outer_layout.addWidget(lbl)
-
-        lbl = TypoLabel("Come back later!", type=TypographyType.BODY)
-        shared.theme.add_widget(lbl)
-        outer_layout.addWidget(lbl, alignment=Qt.AlignmentFlag.AlignHCenter)
+        self.convo_view = ConversationView()
+        self.convo_view.setMaximumWidth(880)
+        self.convo_view.setMinimumWidth(620)
+        self.convo_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        outer_layout.addWidget(self.convo_view)

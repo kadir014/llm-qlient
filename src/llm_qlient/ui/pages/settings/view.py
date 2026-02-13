@@ -43,10 +43,14 @@ class View(BaseView):
         content_scroller.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         outer_layout.addWidget(content_scroller)
 
-        content_scroller.setStyleSheet(f"""
-            background: transparent;
-            border: none;
+        content_scroller.setStyleSheet("""
+            QScrollArea {
+                background: transparent;
+                border: none;
+            }
         """)
+
+        content.setStyleSheet("background: transparent;")
 
         self.content_lyt = QVBoxLayout()
         self.content_lyt.setContentsMargins(0, 30, 0, 0)
