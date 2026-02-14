@@ -98,8 +98,6 @@ class MainWindow(QWidget, Themeable):
         self.init_pages()
 
     def update_theme(self, theme: Theme) -> None:
-        log.info(f"Changed app theme to <fg.magenta>{theme.palette.name}</>")
-
         if platform.system() == "Windows":
             ret = change_titlebar_theme(self, theme.palette.is_dark)
 

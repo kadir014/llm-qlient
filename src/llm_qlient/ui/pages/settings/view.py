@@ -22,9 +22,14 @@ from panllm import __version__ as __panllm_version__
 from llm_qlient import shared
 from llm_qlient.core import log
 from llm_qlient.ui.pages.base_view import BaseView
+from llm_qlient.ui.factories import *
 
 
 class View(BaseView):
+    """
+    Settings user interface view.
+    """
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -58,7 +63,7 @@ class View(BaseView):
         self.content_lyt.setSpacing(45)
         content.setLayout(self.content_lyt)
 
-        self.h1("Settings")
+        h1("Settings", self.content_lyt)
 
         self.content_lyt.addSpacing(9)
 
@@ -77,16 +82,6 @@ class View(BaseView):
         )
 
         self.version_section()
-
-    def h1(self, text: str) -> None:
-        lbl = TypoLabel(text, TypographyType.TITLE1)
-        shared.theme.add_widget(lbl)
-        self.content_lyt.addWidget(lbl)
-
-    def h3(self, text: str) -> None:
-        lbl = TypoLabel(text, TypographyType.TITLE3)
-        shared.theme.add_widget(lbl)
-        self.content_lyt.addWidget(lbl)
 
     def setting(self, text: str, setting: str) -> None:
         setting_lyt = QHBoxLayout()

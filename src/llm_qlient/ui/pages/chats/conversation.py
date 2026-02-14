@@ -8,7 +8,10 @@
 
 """
 
+from typing import Iterator
+
 import re
+import time
 
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QLineEdit, QScrollArea, QPlainTextEdit, QSpacerItem
@@ -22,9 +25,14 @@ from panllm import __version__ as __panllm_version__
 
 from llm_qlient import shared
 from llm_qlient.core import log
+from llm_qlient.core.models import Conversation, ConversationMessage, ConversationRole
 
 
 class InputComposer(QWidget, Themeable):
+    """
+    Input message composer widget.
+    """
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -83,10 +91,37 @@ class InputComposer(QWidget, Themeable):
             }}
         """)
 
+    def get_message(self) -> str:
+        """ Get input message text. """
+        return self.editor.toPlainText().strip()
+    
+    def clear_message(self) -> None:
+        """ Clear input message text. """
+        self.editor.clear()
+
 
 class ConversationBubble(QWidget, Themeable):
-    def __init__(self, parent: QWidget, rtl: bool = False) -> None:
+    """
+    Conversation message bubble widget.
+    """
+
+    def __init__(self, 
+            parent: "ConversationView",
+            convo_msg: ConversationMessage,
+            rtl: bool = False
+            ) -> None:
+        """
+        Parameters
+        ----------
+        parent
+            Parent view widget
+        convo_msg
+            Referenced conversation message model
+        rtl
+            Right-to-left or left-to-right
+        """
         super().__init__(parent=parent)
+        self._convo_msg = convo_msg
 
         layout = QVBoxLayout()
         layout.setContentsMargins(12, 12, 12, 12)
@@ -137,26 +172,39 @@ class ConversationBubble(QWidget, Themeable):
                 wdg.syntax_palette = palette
     
     def set_word_wrapping(self, wrap: bool = True) -> None:
+        """
+        Set word wrapping for all non-code text sections.
+        
+        Parameters
+        ----------
+        wrap
+            Enable word wrapping or not
+        """
         max_width = 0
         for wdg in self.__content_wdgs:
             if isinstance(wdg, TypoLabel):
                 wdg.setWordWrap(wrap)
 
                 fm = QFontMetrics(wdg.font())
-                width = fm.boundingRect(wdg.text()).width() + 30
-                #wdg.setFixedWidth(width)
+                # To prevent unnecessary wrapping
+                padding = 30
+                width = fm.boundingRect(wdg.text()).width() + padding
 
                 max_width = max(width, max_width)
-                #if width < TextBubbleView.MAX_WIDTH:
-                #    self.setFixedWidth(width)
-                #else:
-                #    self.setFixedWidth(TextBubbleView.MAX_WIDTH)
 
         self.setFixedWidth(min(max_width, 880))
 
     def add_content(self, content: str) -> None:
-        max_size = 0
+        """
+        Add new content.
 
+        Text is parsed and sections between triple backquotes are added as code blocks.
+
+        Parameters
+        ----------
+        content
+            Text content to be added
+        """
         i = 0
         subcontent = ""
         entered_code_block = True
@@ -171,7 +219,6 @@ class ConversationBubble(QWidget, Themeable):
                     shared.theme.add_widget(lbl)
                     self.content_lyt.addWidget(lbl)
                     self.__content_wdgs.append(lbl)
-                    max_size = max(lbl.sizeHint().width(), max_size)
                 else:
                     code = Code()
                     code.text = subcontent.strip()
@@ -182,7 +229,6 @@ class ConversationBubble(QWidget, Themeable):
                     shared.theme.add_widget(code)
                     self.content_lyt.addWidget(code)
                     self.__content_wdgs.append(code)
-                    max_size = max(code.sizeHint().width(), max_size)
 
                 entered_code_block = not entered_code_block
 
@@ -200,7 +246,6 @@ class ConversationBubble(QWidget, Themeable):
             shared.theme.add_widget(lbl)
             self.content_lyt.addWidget(lbl)
             self.__content_wdgs.append(lbl)
-            max_size = max(lbl.sizeHint().width(), max_size)
         else:
             code = Code()
             code.text = subcontent.strip()
@@ -211,12 +256,6 @@ class ConversationBubble(QWidget, Themeable):
             shared.theme.add_widget(code)
             self.content_lyt.addWidget(code)
             self.__content_wdgs.append(code)
-            max_size = max(code.sizeHint().width(), max_size)
-
-        # Recover from word wrapping
-        #max_size += 300
-
-        #self.setMaximumWidth(min(max_size, 880))
 
     def paintEvent(self, e) -> None:
         if self.__theme is None: return
@@ -235,6 +274,10 @@ class ConversationBubble(QWidget, Themeable):
 
 
 class ConversationView(QWidget):
+    """
+    Conversation user interface view.
+    """
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -249,45 +292,9 @@ class ConversationView(QWidget):
         self.bubbles_lyt = QVBoxLayout()
         self.bubbles_lyt.setContentsMargins(0, 0, 0, 0)
         self.bubbles_lyt.setSpacing(22)
-        self.bubbles_lyt.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.bubbles_content.setLayout(self.bubbles_lyt)
-        
-        c = ConversationBubble(self, rtl=True)
-        shared.theme.add_widget(c)
-        c.add_content("WHAT ARE PYTHON PROPERTIES???T ARE PYTHON PROPERTIES???T ARE PYTHON PROPERTIES???T WHAT ARE PYTHON PROPERTIES???T ARE PYTHON PROPERTIES???T ARE PYTHON PROPERTIES???T")
-        c.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        single_bubble_lyt = QHBoxLayout()
-        single_bubble_lyt.setContentsMargins(0, 0, 0, 0)
-        single_bubble_lyt.setSpacing(0)
-        single_bubble_lyt.addStretch()
-        single_bubble_lyt.addWidget(c)
-        self.bubbles_lyt.addLayout(single_bubble_lyt)
-        c.set_word_wrapping(True)
 
-        c = ConversationBubble(self)
-        shared.theme.add_widget(c)
-        c.add_content("""
-Of course! Here's how to use property decorators in Python: Of course! Here's how to use property decorators in Python: Of course! Here's how to use property decorators in Python:
-```
-@property
-def attr(self) -> int:
-    return self._attr
-
-@attr.setter
-def attr(self, value: int) -> None:
-    self._attr = value
-```
-As you can see, Python properties are very useful.
-""".strip())
-        c.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        single_bubble_lyt = QHBoxLayout()
-        single_bubble_lyt.setContentsMargins(0, 0, 0, 0)
-        single_bubble_lyt.setSpacing(0)
-        single_bubble_lyt.addStretch()
-        single_bubble_lyt.addWidget(c)
-        self.bubbles_lyt.addLayout(single_bubble_lyt)
-        c.set_word_wrapping(True)
-
+        self.bubbles_lyt.setAlignment(Qt.AlignmentFlag.AlignTop)
         #self.bottom_spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         content_scroller = QScrollArea()
@@ -311,6 +318,83 @@ As you can see, Python properties are very useful.
         layout.addWidget(self.input_composer)
         self.input_composer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
+    def add_bubble(self, convo_msg: ConversationMessage) -> ConversationBubble:
+        """
+        Add new chat message bubble.
+        
+        Parameters
+        ----------
+        convo_msg
+            Conversaion message model to get data from
+        """
+
+        rtl = convo_msg.role == ConversationRole.USER
+
+        c = ConversationBubble(self, convo_msg, rtl=rtl)
+        shared.theme.add_widget(c)
+        c.add_content(convo_msg.content.strip())
+        c.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+
+        single_bubble_lyt = QHBoxLayout()
+        single_bubble_lyt.setContentsMargins(0, 0, 0, 0)
+        single_bubble_lyt.setSpacing(0)
+        if rtl:
+            single_bubble_lyt.addStretch()
+            single_bubble_lyt.addWidget(c)
+        else:
+            single_bubble_lyt.addWidget(c)
+            single_bubble_lyt.addStretch()
+        self.bubbles_lyt.addLayout(single_bubble_lyt)
+
+        c.set_word_wrapping(True)
+
+        return c
+    
+    def iter_bubbles(self) -> Iterator[ConversationBubble]:
+        """ Iterate over message bubble widgets. """
+
+        for i in range(self.bubbles_lyt.count()):
+            item = self.bubbles_lyt.itemAt(i)
+            if isinstance(item, ConversationBubble):
+                yield item
+    
+    def get_bubble_by_message(self, convo_msg: ConversationMessage) -> ConversationBubble | None:
+        """
+        Get message bubble by conversation message model.
+        
+        Parameters
+        ----------
+        convo_msg
+            Conversation message model
+        """
+
+        for bubble in self.iter_bubbles():
+            if bubble._convo_msg == convo_msg:
+                return bubble
+
+
 class ConversationController:
-    def __init__(self) -> None:
-        pass
+    """
+    Conversation user interface controller.
+    """
+
+    def __init__(self, view: ConversationView, model: Conversation) -> None:
+        self.view = view
+        self.model = model
+
+        self.view.input_composer.send_btn.clicked.connect(self.send)
+
+    def send(self) -> None:
+        """ Send current message. """
+
+        text = self.view.input_composer.get_message()
+
+        if not text:
+            log.debug("Input message is empty.")
+            return
+
+        msg = self.model.add("user", text)
+
+        self.view.add_bubble(msg)
+
+        self.view.input_composer.clear_message()

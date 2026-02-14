@@ -11,6 +11,9 @@
 from typing import Any
 
 from dataclasses import dataclass
+from enum import Enum, auto
+from time import time
+import uuid
 
 from PyQt6.QtGui import QIcon
 
@@ -73,8 +76,47 @@ class Page:
             self.name = self.id.capitalize()
 
     def __eq__(self, other: Any) -> bool:
-       print("__eq__", other)
        return isinstance(other, Page) and self.id == other.id
 
     def __hash__(self) -> int:
         return hash(self.id)
+    
+
+@dataclass
+class Character:
+    name: str
+
+
+class ConversationRole(Enum):
+    ASSISTANT = auto()
+    USER = auto()
+
+@immutable_fields("id")
+@dataclass
+class ConversationMessage:
+    role: ConversationRole
+    content: str
+    timestamp: float
+
+    def __post_init__(self) -> None:
+        self.id = uuid.uuid4()
+
+    def __eq__(self, other: Any) -> bool:
+       return isinstance(other, ConversationMessage) and self.id == other.id
+
+    def __hash__(self) -> int:
+        return hash(self.id)
+
+@dataclass
+class Conversation:
+    messages: list[ConversationMessage]
+
+    def add(self, role: str, content: str) -> ConversationMessage:
+        """ Helper function to add new conversation messages. """
+
+        convo_msg = ConversationMessage(
+            ConversationRole[role.upper()], content, time()
+        )
+        self.messages.append(convo_msg)
+
+        return convo_msg

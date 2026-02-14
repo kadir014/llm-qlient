@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/version-0.0.1-yellow">
 </p>
 <p align="center">
-Qt-based desktop user interface for interacting with local Large Language Models.
+Qt-based lightweight desktop user interface for interacting with local Large Language Models.
 </p>
 
 

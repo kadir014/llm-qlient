@@ -17,8 +17,9 @@ from freshqt.animation import Tween, Easing
 
 from llm_qlient import shared
 from llm_qlient.core import log
+from llm_qlient.core.models import Conversation
 from llm_qlient.ui.pages.base_view import BaseView
-from llm_qlient.ui.pages.chats.conversation import ConversationView
+from llm_qlient.ui.pages.chats.conversation import ConversationView, ConversationController
 
 
 class View(BaseView):
@@ -30,8 +31,12 @@ class View(BaseView):
         outer_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.setLayout(outer_layout)
 
+        self.convo = Conversation([])
+
         self.convo_view = ConversationView()
         self.convo_view.setMaximumWidth(880)
         self.convo_view.setMinimumWidth(620)
         self.convo_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         outer_layout.addWidget(self.convo_view)
+
+        self.convo_cont = ConversationController(self.convo_view, self.convo)

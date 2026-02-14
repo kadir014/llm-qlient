@@ -24,32 +24,14 @@ from panllm import LLM, LLMConfig, LLMBackend
 from llm_qlient import shared
 from llm_qlient.core import log
 from llm_qlient.ui.pages.base_view import BaseView
-
-
-def h3(text: str, layout: QLayout) -> TypoLabel:
-    lbl = TypoLabel(text, TypographyType.TITLE3)
-    shared.theme.add_widget(lbl)
-    layout.addWidget(lbl)
-    return lbl
-
-def info_label_pair(desc: str, info: str, layout: QLayout) -> BadgeLabel:
-    pair_lyt = QHBoxLayout()
-    pair_lyt.setContentsMargins(0, 0, 0, 0)
-    pair_lyt.setAlignment(Qt.AlignmentFlag.AlignLeft)
-    layout.addLayout(pair_lyt)
-
-    desc_lbl = TypoLabel(desc)
-    shared.theme.add_widget(desc_lbl)
-    pair_lyt.addWidget(desc_lbl)
-
-    info_lbl = BadgeLabel(info, color="brand_primary")
-    shared.theme.add_widget(info_lbl)
-    pair_lyt.addWidget(info_lbl)
-
-    return info_lbl
+from llm_qlient.ui.factories import *
 
 
 class ModelPanel(QWidget, Themeable):
+    """
+    Model details & loading panel widget.
+    """
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -149,6 +131,10 @@ class ModelPanel(QWidget, Themeable):
 
 
 class ModelConfiguration(QWidget):
+    """
+    Model configuration panel widget.
+    """
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -158,6 +144,10 @@ class ModelConfiguration(QWidget):
 
 
 class View(BaseView):
+    """
+    Models user interface view.
+    """
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -186,7 +176,7 @@ class View(BaseView):
         self.content_lyt.setAlignment(Qt.AlignmentFlag.AlignTop)
         content.setLayout(self.content_lyt)
 
-        self.h1("Models")
+        h1("Models", self.content_lyt)
 
         self.content_lyt.addSpacing(20)
 
@@ -201,13 +191,12 @@ class View(BaseView):
 
         self.controller = Controller(self)
 
-    def h1(self, text: str) -> None:
-        lbl = TypoLabel(text, TypographyType.TITLE1)
-        shared.theme.add_widget(lbl)
-        self.content_lyt.addWidget(lbl)
-
 
 class Controller:
+    """
+    Models user interface controller.
+    """
+
     def __init__(self, view: View) -> None:
         self.view = view
 
