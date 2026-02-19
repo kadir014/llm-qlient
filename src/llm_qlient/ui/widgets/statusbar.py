@@ -31,7 +31,7 @@ class UtilizationFetcher(QThread):
         self.interval_sec = 2.0
 
     def run(self) -> None:
-        log.info(f"<fg.blue>[Thread#{int(self.currentThreadId())}]</> Utilization fetcher started")
+        log.info(f"<fg.blue>[Thrd#{int(self.currentThreadId())}]</> Utilization fetcher started")
 
         self.setPriority(QThread.Priority.LowestPriority)
 
@@ -47,7 +47,7 @@ class UtilizationFetcher(QThread):
             # Sleep later so the first data is fetched instantly
             self.msleep(int(self.interval_sec * 1000))
 
-        log.info(f"<fg.blue>[Thread#{int(self.currentThreadId())}]</> Utilization fetcher finished")
+        log.info(f"<fg.blue>[Thrd#{int(self.currentThreadId())}]</> Utilization fetcher finished")
 
 
 class StatusBar(QWidget):
@@ -82,7 +82,7 @@ class StatusBar(QWidget):
 
     def cleanup(self) -> None:
         self.util_thrd.should_run = False
-        self.util_thrd.wait()
+        self.util_thrd.wait(5000)
 
     @pyqtSlot(UtilizationSummary)
     def _update_util_label(self, util: UtilizationSummary) -> None:

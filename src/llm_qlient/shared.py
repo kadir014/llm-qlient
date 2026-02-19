@@ -15,6 +15,7 @@ from llm_qlient.ui.icon_manager import IconManager
 from llm_qlient.core.broadcast import Broadcast
 from llm_qlient.core.settings import Settings
 from llm_qlient.core.models import Conversation, UserPersona, Character
+from llm_qlient.core.generator import Generator
 
 
 # LLM Qlient version
@@ -57,6 +58,8 @@ current_convo_idx: int = 0
 ################################################################################
 
 model: BaseLLM | None = None
+
+gen: Generator | None = None
 
 
 ################################################################################

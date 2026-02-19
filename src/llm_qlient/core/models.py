@@ -202,3 +202,8 @@ class Conversation(Serializable):
             character=Character.deserialize(data["character"]),
             messages=[ConversationMessage.deserialize(message) for message in data["messages"]]
         )
+
+
+@dataclass
+class GenerationRequest:
+    convo: Conversation

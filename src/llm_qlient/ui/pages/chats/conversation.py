@@ -13,7 +13,7 @@ from typing import Iterator
 from pathlib import Path
 from functools import partial
 
-from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtCore import Qt, QSize, QObject, pyqtSlot
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QLineEdit, QScrollArea, QPlainTextEdit, QSpacerItem, QBoxLayout
 from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor, QFontMetrics
 from freshqt.core import TypographyType, Theme, Themeable, SyntaxLanguage
@@ -22,10 +22,11 @@ from freshqt.widgets import Button, Divider, TypoLabel, Switch, LineEdit, BadgeL
 from freshqt.animation import Tween, Easing
 from freshqt.palettes.catppuccin import SYNTAX_CATPPUCCIN_MOCHA, SYNTAX_CATPPUCCIN_LATTE
 from panllm import __version__ as __panllm_version__
+from panllm import ChatChunk
 
 from llm_qlient import shared
 from llm_qlient.core import log
-from llm_qlient.core.models import Conversation, ConversationMessage, ConversationRole, Character
+from llm_qlient.core.models import Conversation, ConversationMessage, ConversationRole, Character, GenerationRequest
 from llm_qlient.core.content import load_content, save_content
 from llm_qlient.ui.pages.chats.chat_history import ChatHistory
 
@@ -197,6 +198,11 @@ class ConversationBubble(QWidget, Themeable):
 
         self.__content_wdgs: list[QWidget] = []
 
+    @property
+    def content(self) -> list[TypoLabel | Code]:
+        """ Reference list to conversation bubble's content. """
+        return self.__content_wdgs.copy()
+
     def update_theme(self, theme: Theme) -> None:
         palette = SYNTAX_CATPPUCCIN_MOCHA if theme.palette.is_dark else SYNTAX_CATPPUCCIN_LATTE
 
@@ -216,11 +222,21 @@ class ConversationBubble(QWidget, Themeable):
         self.__content_wdgs = []
 
         shared.theme.update_widgets()
+
+    def clear_content(self) -> None:
+        """ Clear messabe bubble content. """
+
+        for widget in self.__content_wdgs:
+            shared.theme.remove_widget(widget, update=False)
+            self.content_lyt.removeWidget(widget)
+            widget.setParent(None)
+
+        self.__content_wdgs = []
     
     def set_word_wrapping(self, wrap: bool = True) -> None:
         """
         Set word wrapping for all non-code text sections.
-        
+
         Parameters
         ----------
         wrap
@@ -243,11 +259,13 @@ class ConversationBubble(QWidget, Themeable):
 
         self.setFixedWidth(min(max_width, 880))
 
-    def add_content(self, content: str) -> None:
+    def add_content(self, content: str) -> QWidget:
         """
         Add new content.
 
         Text is parsed and sections between triple backquotes are added as code blocks.
+
+        Returns the last created widget.
 
         Parameters
         ----------
@@ -305,6 +323,8 @@ class ConversationBubble(QWidget, Themeable):
             shared.theme.add_widget(code)
             self.content_lyt.addWidget(code)
             self.__content_wdgs.append(code)
+
+        return self.__content_wdgs[-1]
 
     def paintEvent(self, e) -> None:
         pt = QPainter(self)
@@ -501,14 +521,19 @@ class ConversationView(QWidget):
                 self.add_bubble(convo_msg, convo.character)
 
 
-class ConversationController:
+class ConversationController(QObject):
     """
     Conversation user interface controller.
     """
 
     def __init__(self, view: ConversationView, history: ChatHistory) -> None:
+        super().__init__()
         self.view = view
         self.history = history
+
+        # Gets updated by thread signals
+        self.stream_bubble: ConversationBubble | None = None
+        self.stream_msg: ConversationMessage | None = None
 
         for convo in shared.convos:
             entry = history.add_entry(convo)
@@ -520,6 +545,10 @@ class ConversationController:
 
         self.change_conversation_index(0)
 
+        shared.gen.generation_started.connect(self.generation_started)
+        shared.gen.generation_finished.connect(self.generation_finished)
+        shared.gen.new_chat_chunk.connect(self.new_chat_chunk)
+
     def send(self) -> None:
         """ Send message to current conversation. """
 
@@ -529,12 +558,43 @@ class ConversationController:
             log.debug("Input message is empty.")
             return
 
-        curr_convo = shared.convos[shared.current_convo_idx]
-        msg = curr_convo.add("user", text)
-
-        self.view.add_bubble(msg, curr_convo.character)
-
         self.view.input_composer.clear_message()
+
+        curr_convo = shared.convos[shared.current_convo_idx]
+
+        user_msg = curr_convo.add("user", text)
+        self.view.add_bubble(user_msg, curr_convo.character)
+
+        shared.gen.start_gen(GenerationRequest(curr_convo))
+
+    @pyqtSlot()
+    def generation_started(self) -> None:
+        curr_convo = shared.convos[shared.current_convo_idx]
+
+        self.stream_msg = curr_convo.add("assistant", "")
+        self.stream_bubble = self.view.add_bubble(self.stream_msg, curr_convo.character)
+
+    @pyqtSlot(ChatChunk)
+    def generation_finished(self, chunk: ChatChunk) -> None:
+        # Clear the old non-formatted text and add it finally
+        self.stream_bubble.clear_content()
+        self.stream_bubble.add_content(chunk.content)
+        self.stream_bubble.set_word_wrapping(True)
+
+        self.stream_msg = None
+        self.stream_bubble = None
+
+    @pyqtSlot(ChatChunk)
+    def new_chat_chunk(self, chunk: ChatChunk) -> None:
+        if self.stream_msg is None or self.stream_bubble is None:
+            return
+        
+        self.stream_msg.content += chunk.content
+        # At this point, bubble must only have one content widget
+        self.stream_bubble.content[0].setText(self.stream_msg.content)
+
+        # Adapt message bubble width
+        self.stream_bubble.set_word_wrapping(True)
 
     def change_conversation_index(self, convo_idx: int) -> None:
         shared.current_convo_idx = convo_idx

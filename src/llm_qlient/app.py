@@ -17,11 +17,13 @@ from PyQt6.QtCore import qInstallMessageHandler, QtMsgType, QMessageLogContext
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QFont, QFontDatabase, QIcon
 from freshqt.assets import HEROICONS
+from panllm import LLM, LLMBackend, LLMConfig
 
 from llm_qlient import shared
 from llm_qlient.core import log
 from llm_qlient.core.content import load_content
 from llm_qlient.core.models import Conversation, UserPersona
+from llm_qlient.core.generator import Generator
 from llm_qlient.ui.main_window import MainWindow
 
 from freshqt.palettes.catppuccin import UI_CATPPUCCIN_MOCHA, UI_CATPPUCCIN_LATTE
@@ -71,9 +73,16 @@ class App:
 
         self._load_content()
 
+        shared.model = LLM(LLMConfig(""), LLMBackend.DUMMY)
+
+        shared.gen = Generator()
+        shared.gen.start()
+
         self.mainwindow = MainWindow()
         shared.theme.add_widget(self.mainwindow)
         self.mainwindow.hide()
+
+        shared.cleanup.connect(self.cleanup)
 
         elapsed = perf_counter() - start
         log.info(f"App is initialized in <fg.lightcyan>{round(elapsed, 3)}</>s (<fg.lightcyan>{round(elapsed*1000, 3)}</>ms)")
@@ -114,6 +123,13 @@ class App:
             shared.personas.append(UserPersona.deserialize(persona))
 
         log.info(f"Loaded <fg.lightcyan>{len(shared.personas)}</> user personas successfully.")
+
+    def cleanup(self) -> None:
+        shared.gen.should_run = False
+        shared.gen._queue.shutdown()
+        shared.gen.wait(5000)
+
+        shared.model.release()
 
     def run(self) -> int:
         self.mainwindow.show()
