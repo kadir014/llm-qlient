@@ -1,0 +1,14 @@
+[
+    {
+        "character": {
+            "name": "AI Assistant"
+        },
+        "messages": [
+            {
+                "role": "user",
+                "content": "Hello! What are properties in Python?",
+                "timestamp": 0.0
+            }
+        ]
+    }
+]

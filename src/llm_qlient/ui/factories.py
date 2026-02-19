@@ -11,10 +11,28 @@
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QLayout, QHBoxLayout
 from freshqt.core import TypographyType
-from freshqt.widgets import TypoLabel, BadgeLabel
+from freshqt.widgets import TypoLabel, BadgeLabel, Divider
 
 from llm_qlient import shared
 
+
+def hdivider(margin: int, layout: QLayout) -> TypoLabel:
+    lbl = Divider(margin, orientation=Qt.Orientation.Horizontal)
+    shared.theme.add_widget(lbl)
+    layout.addWidget(lbl)
+    return lbl
+
+def vdivider(margin: int, layout: QLayout) -> TypoLabel:
+    lbl = Divider(margin, orientation=Qt.Orientation.Vertical)
+    shared.theme.add_widget(lbl)
+    layout.addWidget(lbl)
+    return lbl
+
+def body(text: str, layout: QLayout) -> TypoLabel:
+    lbl = TypoLabel(text, TypographyType.BODY)
+    shared.theme.add_widget(lbl)
+    layout.addWidget(lbl)
+    return lbl
 
 def h1(text: str, layout: QLayout) -> TypoLabel:
     lbl = TypoLabel(text, TypographyType.TITLE1)
@@ -52,6 +70,9 @@ def info_label_pair(desc: str, info: str, layout: QLayout) -> BadgeLabel:
 
 
 __all__ = (
+    "hdivider",
+    "vdivider",
+    "body",
     "h1",
     "h2",
     "h3",

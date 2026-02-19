@@ -81,7 +81,7 @@ class MainWindow(QWidget, Themeable):
         content_lyt.addWidget(self.page_area)
 
         self.setObjectName("bg_primary")
-        self.page_area.setObjectName("bg_primary")
+        self.page_area.setObjectName("bg_secondary")
 
         self.page_area_lyt = QVBoxLayout()
         self.page_area_lyt.setContentsMargins(0, 0, 0, 0)
@@ -107,11 +107,15 @@ class MainWindow(QWidget, Themeable):
         else:
             log.info("Titlebar themeing is only supported on Windows currently.")
 
-        self.page_area.setStyleSheet(f"QWidget#bg_primary {{background-color: {theme.qss(theme.palette.background_secondary)};}}")
+        # log.info(f"Changed theme to <fg.magenta>{theme.palette.name}</>")
 
         self.setStyleSheet(f"""
             QWidget#bg_primary {{
                 background-color: {theme.qss(theme.palette.background_primary)};
+            }}
+
+            QWidget#bg_secondary {{
+                background-color: {theme.qss(theme.palette.background_secondary)};
             }}
 
             QScrollBar:vertical {{

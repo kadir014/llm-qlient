@@ -10,6 +10,7 @@
 
 from typing import Any
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum, auto
 from time import time
@@ -17,7 +18,23 @@ import uuid
 
 from PyQt6.QtGui import QIcon
 
+from llm_qlient.core.typing import JSONContent
 from llm_qlient.ui.pages.base_view import BaseView
+
+
+class Serializable(ABC):
+    """
+    Base protocol for serializable dataclasses.
+    """
+
+    @abstractmethod
+    def serialize(self) -> JSONContent:
+        ...
+
+    @classmethod
+    @abstractmethod
+    def deserialize(cls, data: JSONContent) -> "Serializable":
+        ...
 
 
 def immutable_fields(*field_names: str):
@@ -83,8 +100,35 @@ class Page:
     
 
 @dataclass
-class Character:
+class UserPersona(Serializable):
     name: str
+
+    def serialize(self) -> JSONContent:
+        return {
+            "name": self.name,
+        }
+    
+    @classmethod
+    def deserialize(cls, data: JSONContent) -> "UserPersona":
+        return cls(
+            name=data["name"]
+        )
+    
+
+@dataclass
+class Character(Serializable):
+    name: str
+
+    def serialize(self) -> JSONContent:
+        return {
+            "name": self.name,
+        }
+    
+    @classmethod
+    def deserialize(cls, data: JSONContent) -> "Character":
+        return cls(
+            name=data["name"]
+        )
 
 
 class ConversationRole(Enum):
@@ -93,26 +137,51 @@ class ConversationRole(Enum):
 
 @immutable_fields("id")
 @dataclass
-class ConversationMessage:
+class ConversationMessage(Serializable):
     role: ConversationRole
     content: str
     timestamp: float
 
     def __post_init__(self) -> None:
-        self.id = uuid.uuid4()
+        self.id = str(uuid.uuid4())
 
     def __eq__(self, other: Any) -> bool:
        return isinstance(other, ConversationMessage) and self.id == other.id
 
     def __hash__(self) -> int:
         return hash(self.id)
+    
+    def serialize(self) -> JSONContent:
+        return {
+            "role": self.role.name,
+            "content": self.content,
+            "timestamp": self.timestamp
+        }
+    
+    @classmethod
+    def deserialize(cls, data: JSONContent) -> "ConversationMessage":
+        return cls(
+            role=ConversationRole[data["role"].upper()],
+            content=data["content"],
+            timestamp=data["timestamp"]
+        )
 
 @dataclass
-class Conversation:
+class Conversation(Serializable):
+    character: Character
     messages: list[ConversationMessage]
 
     def add(self, role: str, content: str) -> ConversationMessage:
-        """ Helper function to add new conversation messages. """
+        """
+        Helper function to add new conversation messages.
+        
+        Parameters
+        ----------
+        role
+            Conversation role enumeration name
+        content
+            Text content
+        """
 
         convo_msg = ConversationMessage(
             ConversationRole[role.upper()], content, time()
@@ -120,3 +189,16 @@ class Conversation:
         self.messages.append(convo_msg)
 
         return convo_msg
+    
+    def serialize(self) -> JSONContent:
+        return {
+            "character": self.character.serialize(),
+            "messages": [message.serialize() for message in self.messages]
+        }
+    
+    @classmethod
+    def deserialize(cls, data: JSONContent) -> "Conversation":
+        return cls(
+            character=Character.deserialize(data["character"]),
+            messages=[ConversationMessage.deserialize(message) for message in data["messages"]]
+        )

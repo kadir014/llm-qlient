@@ -14,6 +14,7 @@ from panllm.backends.base import BaseLLM
 from llm_qlient.ui.icon_manager import IconManager
 from llm_qlient.core.broadcast import Broadcast
 from llm_qlient.core.settings import Settings
+from llm_qlient.core.models import Conversation, UserPersona, Character
 
 
 # LLM Qlient version
@@ -32,6 +33,21 @@ icons = IconManager()
 theme.icons = icons
 
 cleanup = Broadcast()
+
+
+################################################################################
+#                                                                              #
+#                                   Models                                     #
+#                                                                              #
+################################################################################
+
+characters: list[Character] = []
+
+personas: list[UserPersona] = []
+current_persona_idx: int = 0
+
+convos: list[Conversation] = []
+current_convo_idx: int = 0
 
 
 ################################################################################

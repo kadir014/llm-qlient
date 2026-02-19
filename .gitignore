@@ -1,6 +1,7 @@
 # Project stuff
 uv.lock
 settings.json
+data/content/*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

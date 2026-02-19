@@ -10,11 +10,11 @@
 
 from typing import Iterator
 
-import re
-import time
+from pathlib import Path
+from functools import partial
 
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QLineEdit, QScrollArea, QPlainTextEdit, QSpacerItem
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QLineEdit, QScrollArea, QPlainTextEdit, QSpacerItem, QBoxLayout
 from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor, QFontMetrics
 from freshqt.core import TypographyType, Theme, Themeable, SyntaxLanguage
 from freshqt.core import __version__ as __freshqt_version__
@@ -25,7 +25,9 @@ from panllm import __version__ as __panllm_version__
 
 from llm_qlient import shared
 from llm_qlient.core import log
-from llm_qlient.core.models import Conversation, ConversationMessage, ConversationRole
+from llm_qlient.core.models import Conversation, ConversationMessage, ConversationRole, Character
+from llm_qlient.core.content import load_content, save_content
+from llm_qlient.ui.pages.chats.chat_history import ChatHistory
 
 
 class InputComposer(QWidget, Themeable):
@@ -100,6 +102,39 @@ class InputComposer(QWidget, Themeable):
         self.editor.clear()
 
 
+def recursive_clear(
+        layout: QBoxLayout,
+        remove_layouts: bool = True,
+        remove_widgets: bool = True,
+        remove_items: bool = True
+        ) -> None:
+    for i in reversed(range(layout.count())):
+        item = layout.itemAt(i)
+
+        if remove_layouts:
+            lyt = item.layout()
+            if lyt is not None:
+                recursive_clear(
+                    lyt, remove_layouts, remove_widgets, remove_items
+                )
+                layout.removeItem(lyt)
+                lyt.setParent(None)
+                lyt.deleteLater()
+
+        if remove_widgets:
+            wdg = item.widget()
+            if wdg is not None:
+                layout.removeWidget(wdg)
+                wdg.setParent(None)
+                wdg.deleteLater()
+
+        if remove_items:
+            s = item.spacerItem()
+            if s is not None:
+                layout.removeItem(s)
+                
+
+
 class ConversationBubble(QWidget, Themeable):
     """
     Conversation message bubble widget.
@@ -108,6 +143,7 @@ class ConversationBubble(QWidget, Themeable):
     def __init__(self, 
             parent: "ConversationView",
             convo_msg: ConversationMessage,
+            name: str,
             rtl: bool = False
             ) -> None:
         """
@@ -140,7 +176,7 @@ class ConversationBubble(QWidget, Themeable):
         title_lyt.addWidget(self.avatar)
 
         self.name_lbl = TypoLabel(type=TypographyType.SUBTITLE)
-        self.name_lbl.setText("Chatgippity")
+        self.name_lbl.setText(name)
         shared.theme.add_widget(self.name_lbl)
 
         if rtl:
@@ -159,17 +195,27 @@ class ConversationBubble(QWidget, Themeable):
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         layout.addLayout(self.content_lyt)
 
-        self.__theme: Theme | None = None
         self.__content_wdgs: list[QWidget] = []
 
     def update_theme(self, theme: Theme) -> None:
-        self.__theme = theme
-
         palette = SYNTAX_CATPPUCCIN_MOCHA if theme.palette.is_dark else SYNTAX_CATPPUCCIN_LATTE
 
         for wdg in self.__content_wdgs:
             if isinstance(wdg, Code):
                 wdg.syntax_palette = palette
+
+    def theme_removed(self) -> None:
+        shared.theme.remove_widget(self.avatar, update=False)
+        shared.theme.remove_widget(self.name_lbl, update=False)
+
+        recursive_clear(self.layout())
+        
+        for widget in self.__content_wdgs:
+            shared.theme.remove_widget(widget, update=False)
+            widget.setParent(None)
+        self.__content_wdgs = []
+
+        shared.theme.update_widgets()
     
     def set_word_wrapping(self, wrap: bool = True) -> None:
         """
@@ -191,6 +237,9 @@ class ConversationBubble(QWidget, Themeable):
                 width = fm.boundingRect(wdg.text()).width() + padding
 
                 max_width = max(width, max_width)
+
+        title_width = self.name_lbl.sizeHint().width() + self.avatar.width() + 36
+        max_width = max(max_width, title_width)
 
         self.setFixedWidth(min(max_width, 880))
 
@@ -258,8 +307,6 @@ class ConversationBubble(QWidget, Themeable):
             self.__content_wdgs.append(code)
 
     def paintEvent(self, e) -> None:
-        if self.__theme is None: return
-
         pt = QPainter(self)
         pt.setRenderHint(QPainter.RenderHint.Antialiasing, on=True)
 
@@ -270,7 +317,8 @@ class ConversationBubble(QWidget, Themeable):
         clippath.addRoundedRect(0, 0, w, h, border_r, border_r)
         pt.setClipPath(clippath)
 
-        pt.fillRect(0, 0, w, h, self.__theme.qcolor(self.__theme.palette.background_tertiary))
+        bg_color = shared.theme.qcolor(shared.theme.palette.background_tertiary)
+        pt.fillRect(0, 0, w, h, bg_color)
 
 
 class ConversationView(QWidget):
@@ -297,14 +345,14 @@ class ConversationView(QWidget):
         self.bubbles_lyt.setAlignment(Qt.AlignmentFlag.AlignTop)
         #self.bottom_spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
-        content_scroller = QScrollArea()
-        content_scroller.setWidget(self.bubbles_content)
-        content_scroller.setWidgetResizable(True)
-        content_scroller.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        layout.addWidget(content_scroller)
-        content_scroller.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.content_scroller = QScrollArea()
+        self.content_scroller.setWidget(self.bubbles_content)
+        self.content_scroller.setWidgetResizable(True)
+        self.content_scroller.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        layout.addWidget(self.content_scroller)
+        self.content_scroller.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-        content_scroller.setStyleSheet("""
+        self.content_scroller.setStyleSheet("""
             QScrollArea {
                 background: transparent;
                 border: none;
@@ -318,24 +366,71 @@ class ConversationView(QWidget):
         layout.addWidget(self.input_composer)
         self.input_composer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-    def add_bubble(self, convo_msg: ConversationMessage) -> ConversationBubble:
+        # Disclaimer for when there are not conversations
+        self.disclaimer = QWidget()
+        layout.addWidget(self.disclaimer, alignment=Qt.AlignmentFlag.AlignCenter)
+        disc_layout = QVBoxLayout()
+        disc_layout.setContentsMargins(0, 0, 0, 0)
+        disc_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.disclaimer.setLayout(disc_layout)
+
+        lbl = TypoLabel("You have no conversations. 💔", type=TypographyType.LARGE_TITLE)
+        shared.theme.add_widget(lbl)
+        disc_layout.addWidget(lbl)
+
+        lbl = TypoLabel("Choose a character and start chatting!", type=TypographyType.BODY)
+        shared.theme.add_widget(lbl)
+        disc_layout.addWidget(lbl, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.toggle_disclaimer_state(True)
+
+    def toggle_disclaimer_state(self, disclaimer: bool) -> None:
+        """ Choose whether to display conversation widgets or the disclaimer. """
+
+        if disclaimer:
+            self.disclaimer.show()
+            self.content_scroller.hide()
+            self.bubbles_content.hide()
+            self.input_composer.hide()
+
+        else:
+            self.disclaimer.hide()
+            self.content_scroller.show()
+            self.bubbles_content.show()
+            self.input_composer.show()
+
+    def add_bubble(self,
+            convo_msg: ConversationMessage,
+            character: Character
+            ) -> ConversationBubble:
         """
         Add new chat message bubble.
         
         Parameters
         ----------
         convo_msg
-            Conversaion message model to get data from
+            Conversation message model to get data from
+        character
+            Conversation character
         """
 
         rtl = convo_msg.role == ConversationRole.USER
 
-        c = ConversationBubble(self, convo_msg, rtl=rtl)
+        # Since user persona can be changed at anytime, always use the most recent
+        # user persona for chat bubble title, instead of storing the user persona
+        # too with conversation data.
+        if rtl:
+            name = shared.personas[shared.current_persona_idx].name
+        else:
+            name = character.name
+
+        c = ConversationBubble(self, convo_msg, name, rtl=rtl)
         shared.theme.add_widget(c)
         c.add_content(convo_msg.content.strip())
         c.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
 
         single_bubble_lyt = QHBoxLayout()
+        single_bubble_lyt.setObjectName("single_bubble_lyt")
         single_bubble_lyt.setContentsMargins(0, 0, 0, 0)
         single_bubble_lyt.setSpacing(0)
         if rtl:
@@ -371,6 +466,39 @@ class ConversationView(QWidget):
         for bubble in self.iter_bubbles():
             if bubble._convo_msg == convo_msg:
                 return bubble
+            
+    def clear(self) -> None:
+        """ Clear all bubble widgets from layout. """
+
+        # Remove references from theme
+        shared.theme.remove_widgets_by_type(ConversationBubble)
+
+        # https://stackoverflow.com/a/25330164
+        # Remove items parents as well, allowing them to be deleted gracefully
+        for i in reversed(range(self.bubbles_lyt.count())):
+            w = self.bubbles_lyt.itemAt(i).layout()
+            if w is not None and w.objectName() == "single_bubble_lyt":
+                self.bubbles_lyt.removeItem(w)
+                w.setParent(None)
+                w.deleteLater()
+            
+    def load_conversation(self) -> None:
+        """
+        Load a new conversation after clearing the current one.
+        
+        Parameters
+        ----------
+        convo
+            Conversation to be loaded
+        """
+
+        self.clear()
+
+        if len(shared.convos) > 0:
+            convo = shared.convos[shared.current_convo_idx]
+
+            for convo_msg in convo.messages:
+                self.add_bubble(convo_msg, convo.character)
 
 
 class ConversationController:
@@ -378,14 +506,22 @@ class ConversationController:
     Conversation user interface controller.
     """
 
-    def __init__(self, view: ConversationView, model: Conversation) -> None:
+    def __init__(self, view: ConversationView, history: ChatHistory) -> None:
         self.view = view
-        self.model = model
+        self.history = history
+
+        for convo in shared.convos:
+            entry = history.add_entry(convo)
+            entry.button.clicked.connect(partial(self._chat_history_entry_clicked, convo))
+
+        self.view.toggle_disclaimer_state(len(shared.convos) == 0)
 
         self.view.input_composer.send_btn.clicked.connect(self.send)
 
+        self.change_conversation_index(0)
+
     def send(self) -> None:
-        """ Send current message. """
+        """ Send message to current conversation. """
 
         text = self.view.input_composer.get_message()
 
@@ -393,8 +529,22 @@ class ConversationController:
             log.debug("Input message is empty.")
             return
 
-        msg = self.model.add("user", text)
+        curr_convo = shared.convos[shared.current_convo_idx]
+        msg = curr_convo.add("user", text)
 
-        self.view.add_bubble(msg)
+        self.view.add_bubble(msg, curr_convo.character)
 
         self.view.input_composer.clear_message()
+
+    def change_conversation_index(self, convo_idx: int) -> None:
+        shared.current_convo_idx = convo_idx
+        self.view.load_conversation()
+
+    def _chat_history_entry_clicked(self, convo: Conversation) -> None:
+        for i, convo_ in enumerate(shared.convos):
+            if convo_ is convo:
+                shared.current_convo_idx = i
+                break
+
+        self.view.load_conversation()
+        log.info(f"Changed conversation to <fg.yellow>{convo.character.name}</> (index <fg.lightcyan>{shared.current_convo_idx}</>)")

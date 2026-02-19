@@ -12,3 +12,5 @@ from pathlib import Path
 
 
 PathLike = str | bytes | Path
+
+JSONContent = dict | list[dict]

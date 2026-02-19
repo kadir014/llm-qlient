@@ -20,6 +20,8 @@ from freshqt.assets import HEROICONS
 
 from llm_qlient import shared
 from llm_qlient.core import log
+from llm_qlient.core.content import load_content
+from llm_qlient.core.models import Conversation, UserPersona
 from llm_qlient.ui.main_window import MainWindow
 
 from freshqt.palettes.catppuccin import UI_CATPPUCCIN_MOCHA, UI_CATPPUCCIN_LATTE
@@ -42,7 +44,7 @@ class App:
 
         # TODO: better path for data fonts icons etc
 
-        for root, _, files in os.walk("data/fonts"):
+        for root, _, files in os.walk(ROOT / "data" / "fonts"):
             for file in files:
                 fontpath = os.path.join(root, file)
                 font_id = QFontDatabase.addApplicationFont(fontpath)
@@ -67,6 +69,8 @@ class App:
         shared.theme.font_family = "Outfit"
         shared.theme.update_palette(UI_CATPPUCCIN_MOCHA)
 
+        self._load_content()
+
         self.mainwindow = MainWindow()
         shared.theme.add_widget(self.mainwindow)
         self.mainwindow.hide()
@@ -87,6 +91,29 @@ class App:
         new_msg = f"<fg.green>[Qt]</> {msg}"
 
         log.log(level_map[type_], new_msg)
+
+    def _load_content(self) -> None:
+        ROOT = Path.cwd()
+
+        convos_json = load_content(
+            ROOT / "data" / "content" / "conversations.json",
+            ROOT / "data" / "content" / "conversations.json.template"
+        )
+
+        for convo in convos_json:
+            shared.convos.append(Conversation.deserialize(convo))
+
+        log.info(f"Loaded <fg.lightcyan>{len(shared.convos)}</> conversations successfully.")
+
+        personas_json = load_content(
+            ROOT / "data" / "content" / "user_personas.json",
+            ROOT / "data" / "content" / "user_personas.json.template"
+        )
+
+        for persona in personas_json:
+            shared.personas.append(UserPersona.deserialize(persona))
+
+        log.info(f"Loaded <fg.lightcyan>{len(shared.personas)}</> user personas successfully.")
 
     def run(self) -> int:
         self.mainwindow.show()

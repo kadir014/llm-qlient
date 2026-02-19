@@ -80,11 +80,13 @@ class ModelPanel(QWidget, Themeable):
         model_load_lyt.addLayout(btns_lyt)
 
         self.load_btn = Button("Load", icon_name="hi-arrow-down-circle")
+        self.load_btn.setIconSize(QSize(20, 20))
         self.load_btn.background_color = "state_success"
         shared.theme.add_widget(self.load_btn)
         btns_lyt.addWidget(self.load_btn)
 
         self.unload_btn = Button("Unload", icon_name="hi-x-circle")
+        self.unload_btn.setIconSize(QSize(20, 20))
         self.unload_btn.background_color = "state_error"
         shared.theme.add_widget(self.unload_btn)
         btns_lyt.addWidget(self.unload_btn)
