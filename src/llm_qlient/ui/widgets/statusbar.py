@@ -19,7 +19,7 @@ from freshqt.animation import Tween, Easing
 
 from llm_qlient import shared
 from llm_qlient.core import log
-from llm_qlient.core.utilization import get_utilization_summary, UtilizationSummary
+from llm_qlient.core.sysinfo import get_utilization_summary, UtilizationSummary
 
 
 class UtilizationFetcher(QThread):

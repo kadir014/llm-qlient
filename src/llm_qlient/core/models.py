@@ -20,7 +20,7 @@ import uuid
 
 from PyQt6.QtGui import QIcon
 
-from llm_qlient.core.typing import JSONContent
+from llm_qlient.core.types import JSONContent
 from llm_qlient.ui.pages.base_view import BaseView
 
 

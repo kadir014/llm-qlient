@@ -17,7 +17,7 @@ from PyQt6.QtGui import QIcon, QPainter, QColor, QPixmap
 from freshqt.core import BaseIconManager
 
 from llm_qlient.core import log
-from llm_qlient.core.typing import PathLike
+from llm_qlient.core.types import PathLike
 
 
 class IconManager(BaseIconManager):

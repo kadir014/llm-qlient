@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 import psutil
 
-from llm_qlient.core.nvidia_info import get_gpu_info
+from llm_qlient.core.sysinfo.nvidia import get_gpu_info
 
 
 @dataclass(frozen=True)
@@ -51,6 +51,8 @@ class UtilizationSummary:
     vram_percent: float
 
 def get_utilization_summary() -> UtilizationSummary:
+    """ Fetch system utilization metrics summary."""
+
     cpu = psutil.cpu_percent() * 0.01
     mem = psutil.virtual_memory()
     gpu = get_gpu_info()

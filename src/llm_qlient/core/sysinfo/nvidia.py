@@ -13,16 +13,18 @@
 import subprocess
 from dataclasses import dataclass
 
+from llm_qlient.core import log
+
 
 @dataclass
 class NvidiaDriverInfo:
     """
     Information about installed Nvidia driver.
 
-    Fields are empty strings if information is failed to fetch
+    Fields are empty strings if corresponding information is failed to fetch
 
-    Fields
-    ------
+    Attributes
+    ----------
     version
         Currently installed version
     smi_version
@@ -31,8 +33,10 @@ class NvidiaDriverInfo:
         NVML version
     cuda_version
         Supported CUDA version
+
         This can be different from the installed CUDA driver version
     """
+
     version: str = ""
     smi_version: str = ""
     nvml_version: str = ""
@@ -44,25 +48,50 @@ class NvidiaGPUInfo:
     """
     Information about Nvidia GPU.
 
-    Fields are either empty strings or zeroes if informatios is failed to fetch.
+    Fields are either empty strings or zeroes if corresponding information is failed to fetch.
 
-    Fields
-    ------
+    Attributes
+    ----------
     name
-        Official product name of the GPU
+        Official product name of the GPU (e.g. NVIDIA GeForce RTX 4070)
     brand
-        Official brand of the GPU
+        Official brand of the GPU (e.g. GeForce)
     arch
-        Official architecture name of the GPU
+        Official architecture name of the GPU (e.g. Ada Lovelace)
     mem_total
-        Total size of frame buffer memory.
+        Total size of video memory in bytes
     mem_reserved
-        Reserved size of frame buffer memory.
+        Reserved size of video memory in bytes
     mem_used
-        Used size of frame buffer memory.
+        Used size of video memory in bytes
     mem_free
-        Free size of frame buffer memory.
+        Free size of video memory in bytes
+    fan_speed
+        GPU fan speed percentage in range [0, 1]
+
+        This may not match the exact sensor data
+    usage
+        GPU utilization percentage in range [0, 1]
+    mem_usage
+        GPU memory utilization percentage in range [0, 1]
+    temperature
+        Current GPU temperature in celsius
+    power_avg
+        Average power draw
+    clock_graphics
+        Current graphics clock speed
+    clock_sm
+        Current SM clock speed
+    clock_mem
+        Current video memory clock speed
+    clock_max_graphics
+        Maximum graphics clock speed
+    clock_max_sm
+        Maximum SM clock speed
+    clock_max_mem
+        Maximum video memory clock speed
     """
+
     name: str = ""
     brand: str = ""
     arch: str = ""
@@ -105,13 +134,19 @@ def parse_datasize(data: str) -> int:
         return int(data)
     
     elif data.endswith("gib"):
-        return int(data.replace("mib", "")) * 1073741824
+        return int(data.replace("gib", "")) * 1073741824
+    elif data.endswith("gb"):
+        return int(data.replace("gb", "")) * 1073741824
 
     elif data.endswith("mib"):
         return int(data.replace("mib", "")) * 1048576
+    elif data.endswith("mb"):
+        return int(data.replace("mb", "")) * 1048576
     
     elif data.endswith("kib"):
         return int(data.replace("kib", "")) * 1024
+    elif data.endswith("kb"):
+        return int(data.replace("kb", "")) * 1024
     
     elif data.endswith("b"):
         return int(data.replace("b", ""))
@@ -122,7 +157,7 @@ def parse_percentage(data: str) -> float:
     """
     Parse percentage and return normalized percentage.
 
-    Return -1 if fails to parse.
+    Returns negative if fails to parse.
     """
 
     if not data:
@@ -150,7 +185,7 @@ def get_driver_info() -> NvidiaDriverInfo:
     )
 
     if p.returncode != 0:
-        # TODO: logging
+        log.warn(f"nvidia-smi returned <fg.lightred>{p.returncode}</>")
         return driver_info
 
     content = p.stdout.decode("utf-8")
@@ -185,7 +220,7 @@ def get_gpu_info() -> NvidiaGPUInfo:
     )
 
     if p.returncode != 0:
-        # TODO: logging
+        log.warn(f"nvidia-smi returned <fg.lightred>{p.returncode}</>")
         return gpu
 
     content = p.stdout.decode("utf-8")
@@ -290,10 +325,10 @@ def get_gpu_info() -> NvidiaGPUInfo:
                 elif line.startswith("Memory"):
                     gpu.clock_max_mem = line.split(":")[1].strip()
 
+    # Convert rest of invalid fields for consistency
+    for field in gpu.__dataclass_fields__:
+        attr = getattr(gpu, field)
+        if isinstance(attr, str) and attr.lower() in {"n/a", "nan"}:
+            setattr(gpu, field, "")
+
     return gpu
-
-
-if __name__ == "__main__":
-    from pprint import pprint
-    pprint(get_driver_info())
-    pprint(get_gpu_info())
