@@ -111,6 +111,20 @@ def recursive_clear(
         remove_widgets: bool = True,
         remove_items: bool = True
         ) -> None:
+    """
+    Clear out a layout recursively.
+
+    Parameters
+    ----------
+    layout
+        Layout to clear recursively
+    remove_layouts
+        Remove children layouts
+    remove_widgets
+        Remove children widgets
+    remove_items
+        Remove children spacer items
+    """
     for i in reversed(range(layout.count())):
         item = layout.itemAt(i)
 
@@ -127,6 +141,7 @@ def recursive_clear(
         if remove_widgets:
             wdg = item.widget()
             if wdg is not None:
+                shared.theme.remove_widget(wdg, update=False)
                 layout.removeWidget(wdg)
                 wdg.setParent(None)
                 wdg.deleteLater()
@@ -135,7 +150,6 @@ def recursive_clear(
             s = item.spacerItem()
             if s is not None:
                 layout.removeItem(s)
-                
 
 
 class ConversationBubble(QWidget, Themeable):
@@ -222,8 +236,6 @@ class ConversationBubble(QWidget, Themeable):
             shared.theme.remove_widget(widget, update=False)
             widget.setParent(None)
         self.__content_wdgs = []
-
-        shared.theme.update_widgets()
 
     def clear_content(self) -> None:
         """ Clear messabe bubble content. """
@@ -471,11 +483,18 @@ class ConversationView(QWidget):
         """ Iterate over message bubble widgets. """
 
         for i in range(self.bubbles_lyt.count()):
-            item = self.bubbles_lyt.itemAt(i)
-            if isinstance(item, ConversationBubble):
-                yield item
+            bubble_lyt = self.bubbles_lyt.itemAt(i).layout()
+            if bubble_lyt is not None:
+
+                for j in range(bubble_lyt.count()):
+                    bubble = bubble_lyt.itemAt(j).widget()
+
+                    if bubble is not None and isinstance(bubble, ConversationBubble):
+                        yield bubble
     
-    def get_bubble_by_message(self, convo_msg: ConversationMessage) -> ConversationBubble | None:
+    def get_bubble_by_message(self,
+            convo_msg: ConversationMessage
+            ) -> ConversationBubble | None:
         """
         Get message bubble by conversation message model.
         
@@ -493,7 +512,7 @@ class ConversationView(QWidget):
         """ Clear all bubble widgets from layout. """
 
         # Remove references from theme
-        shared.theme.remove_widgets_by_type(ConversationBubble)
+        shared.theme.remove_widgets_by_type(ConversationBubble, update=False)
 
         # https://stackoverflow.com/a/25330164
         # Remove items parents as well, allowing them to be deleted gracefully
@@ -522,6 +541,8 @@ class ConversationView(QWidget):
             for convo_msg in convo.messages:
                 self.add_bubble(convo_msg, convo.character)
 
+            log.info(f"Loaded conversation <fg.yellow>{convo.character.name}</> (index <fg.lightcyan>{shared.current_convo_idx}</>)")
+
 
 class ConversationController(QObject):
     """
@@ -544,20 +565,25 @@ class ConversationController(QObject):
         self.view.toggle_disclaimer_state(len(shared.convos) == 0)
 
         self.view.input_composer.send_btn.clicked.connect(self.send)
+        self.view.input_composer.retry_btn.clicked.connect(self.retry)
 
         self.change_conversation_index(0)
 
-        shared.gen.generation_started.connect(self.generation_started)
-        shared.gen.generation_finished.connect(self.generation_finished)
-        shared.gen.new_chat_chunk.connect(self.new_chat_chunk)
+        shared.gen.generation_started.connect(self._generation_started)
+        shared.gen.generation_finished.connect(self._generation_finished)
+        shared.gen.new_chat_chunk.connect(self._new_chat_chunk)
 
     def send(self) -> None:
-        """ Send message to current conversation. """
+        """ Send current message to current conversation. """
 
-        text = self.view.input_composer.get_message()
+        if shared.gen.is_generating:
+            log.debug("Already generating, skipping send.")
+            return
+
+        text = self.view.input_composer.get_message().strip()
 
         if not text:
-            log.debug("Input message is empty.")
+            log.debug("Input message is empty, skipping send.")
             return
 
         self.view.input_composer.clear_message()
@@ -567,40 +593,81 @@ class ConversationController(QObject):
         user_msg = curr_convo.add("user", text)
         self.view.add_bubble(user_msg, curr_convo.character)
 
-        shared.gen.start_gen(GenerationRequest(curr_convo))
+        shared.gen.start_gen(GenerationRequest(curr_convo, "new"))
 
-    @pyqtSlot()
-    def generation_started(self) -> None:
+    def retry(self) -> None:
+        """ Regenerate the last assistant message. """
+
+        if shared.gen.is_generating:
+            log.debug("Already generating, skipping retry.")
+            return
+
+        if self.stream_msg is None or self.stream_bubble is None:
+            self.get_last_assistant_message()
+
+            if self.stream_msg is None or self.stream_bubble is None:
+                log.debug("No assistant message found yet, skipping retry.")
+                return
+
+        self.stream_msg.content = ""
+        self.stream_bubble.clear_content()
+
+        curr_convo = shared.convos[shared.current_convo_idx]
+        shared.gen.start_gen(GenerationRequest(curr_convo, "retry"))
+
+    def change_conversation_index(self, convo_idx: int) -> None:
+        """ Change current conversation index and load it. """
+        shared.current_convo_idx = convo_idx
+        self.view.load_conversation()
+
+    def get_last_assistant_message(self) -> None:
+        """
+        Try to find the latest assistant message.
+        
+        This overwrites the current streaming message state if found.
+        """
         curr_convo = shared.convos[shared.current_convo_idx]
 
-        self.stream_msg = curr_convo.add("assistant", "")
-        self.stream_bubble = self.view.add_bubble(self.stream_msg, curr_convo.character)
+        if len(curr_convo.messages) == 0:
+            return
 
-    @pyqtSlot(ChatChunk)
-    def generation_finished(self, chunk: ChatChunk) -> None:
-        # Clear the old non-formatted text and add it finally
+        last_msg = curr_convo.messages[-1]
+
+        if last_msg.role == ConversationRole.ASSISTANT:
+            self.stream_msg = last_msg
+            self.stream_bubble = self.view.get_bubble_by_message(last_msg)
+
+    @pyqtSlot(str)
+    def _generation_started(self, mode: str) -> None:
+        curr_convo = shared.convos[shared.current_convo_idx]
+
+        if mode == "new":
+            self.stream_msg = curr_convo.add("assistant", "")
+            self.stream_bubble = self.view.add_bubble(self.stream_msg, curr_convo.character)
+
+    @pyqtSlot(str, ChatChunk)
+    def _generation_finished(self, mode: str, chunk: ChatChunk) -> None:
+        # Clear the old non-formatted streamed text and add the formatted version
         self.stream_bubble.clear_content()
         self.stream_bubble.add_content(chunk.content)
         self.stream_bubble.set_word_wrapping(True)
 
-        self.stream_msg = None
-        self.stream_bubble = None
-
-    @pyqtSlot(ChatChunk)
-    def new_chat_chunk(self, chunk: ChatChunk) -> None:
+    @pyqtSlot(str, ChatChunk)
+    def _new_chat_chunk(self, mode: str, chunk: ChatChunk) -> None:
+        # This should never happen, but let's not ignore it
         if self.stream_msg is None or self.stream_bubble is None:
+            log.error("Streaming message bubble not found.")
             return
-        
-        self.stream_msg.content += chunk.content
-        # At this point, bubble must only have one content widget
-        self.stream_bubble.content[0].setText(self.stream_msg.content)
 
-        # Adapt message bubble width
+        self.stream_msg.content += chunk.content
+        
+        if len(self.stream_bubble.content) == 0:
+            self.stream_bubble.add_content("")
+
+        self.stream_bubble.content[0].setText(self.stream_msg.content)
         self.stream_bubble.set_word_wrapping(True)
 
-    def change_conversation_index(self, convo_idx: int) -> None:
-        shared.current_convo_idx = convo_idx
-        self.view.load_conversation()
+        self.view.content_scroller.ensureWidgetVisible(self.stream_bubble)
 
     def _chat_history_entry_clicked(self, convo: Conversation) -> None:
         for i, convo_ in enumerate(shared.convos):
@@ -609,4 +676,3 @@ class ConversationController(QObject):
                 break
 
         self.view.load_conversation()
-        log.info(f"Changed conversation to <fg.yellow>{convo.character.name}</> (index <fg.lightcyan>{shared.current_convo_idx}</>)")

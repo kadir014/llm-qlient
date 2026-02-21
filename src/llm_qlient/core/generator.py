@@ -35,9 +35,9 @@ class Generator(QThread):
         New text chat chunk generated
     """
 
-    generation_started = pyqtSignal()
-    generation_finished = pyqtSignal(ChatChunk)
-    new_chat_chunk = pyqtSignal(ChatChunk)
+    generation_started = pyqtSignal(str)
+    generation_finished = pyqtSignal(str, ChatChunk)
+    new_chat_chunk = pyqtSignal(str, ChatChunk)
 
     def __init__(self) -> None:
         super().__init__()
@@ -74,10 +74,10 @@ class Generator(QThread):
             except Exception as e:
                 raise e
             
-            log.debug(f"{self._log_repr()} New request")
+            log.debug(f"{self._log_repr()} New request ({request.mode})")
             
             self._is_generating = True
-            self.generation_started.emit()
+            self.generation_started.emit(request.mode)
 
             cfg = GenerationConfig(
                 max_tokens=256,
@@ -101,11 +101,13 @@ class Generator(QThread):
             full_content = ""
             for chunk in stream:
                 full_content += chunk.content
-                self.new_chat_chunk.emit(chunk)
+                self.new_chat_chunk.emit(request.mode, chunk)
 
-                # This can be modified mid-generation
+                # This might be altered mid-generation
                 if not self._is_generating:
                     break
+
+            full_chunk = ChatChunk(chunk.role, full_content)
 
             log.debug(
                 f"{self._log_repr()} Generation finished:\n"
@@ -118,6 +120,6 @@ class Generator(QThread):
             if self.should_run:
                 self._queue.task_done()
                 self._is_generating = False
-                self.generation_finished.emit(ChatChunk(chunk.role, full_content))
+                self.generation_finished.emit(request.mode, full_chunk)
 
         log.info(f"{self._log_repr()} Generator finished")

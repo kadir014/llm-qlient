@@ -24,6 +24,7 @@ from llm_qlient.core import log
 from llm_qlient.app import App
 
 
+
 def log_diag() -> None:
     """
     Log system and platform specifications for debugging and diagnostics.
@@ -58,6 +59,7 @@ def main() -> None:
         shared.model.release()
 
     log_file.close()
+    # REMEMBER: Breaks memory profilers and such
     sys.exit(ret)
 
 

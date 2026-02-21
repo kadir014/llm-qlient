@@ -208,4 +208,16 @@ class Conversation(Serializable):
 
 @dataclass
 class GenerationRequest:
+    """
+    Text generation request data.
+    
+    Attributes
+    ----------
+    convo
+        Conversation to use as the prompt
+    mode
+        Generation mode
+        Doesn't affect the generation itself, it's passed down to signals
+    """
     convo: Conversation
+    mode: str
