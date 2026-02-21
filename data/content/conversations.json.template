@@ -6,7 +6,12 @@
         "messages": [
             {
                 "role": "user",
-                "content": "Hello! What are properties in Python?",
+                "content": "Hello! Can you help me with my Python issue?",
+                "timestamp": 0.0
+            },
+            {
+                "role": "assistant",
+                "content": "Sure! Can you explain your issue in detail?",
                 "timestamp": 0.0
             }
         ]

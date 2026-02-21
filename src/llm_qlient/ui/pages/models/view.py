@@ -101,7 +101,7 @@ class ModelPanel(QWidget, Themeable):
     def update_model_info(self) -> None:
         """ Update model information labels. """
 
-        if shared.model is None:
+        if shared.model is None or shared.model.backend == LLMBackend.DUMMY:
             self.name_lbl.setText("Not loaded")
             self.size_lbl.setText("0.0 GB")
             self.type_lbl.setText("Unknown")
