@@ -1,10 +1,11 @@
-<br><br>
-<p align="center">
+<br>
+<h1 align="center">
   <img src="data/gh/llmqlientthumb_1920.png" width=600>
-</p>
-<hr>
+</h1>
+
 <p align="center">
   <a href="https://github.com/kadir014/llm-qlient/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+  <img src="https://img.shields.io/badge/python-3.12+-blue">
   <img src="https://img.shields.io/badge/version-0.0.1-yellow">
 </p>
 <p align="center">
