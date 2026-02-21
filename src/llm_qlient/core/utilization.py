@@ -55,13 +55,16 @@ def get_utilization_summary() -> UtilizationSummary:
     mem = psutil.virtual_memory()
     gpu = get_gpu_info()
 
+    mem_percent = 0 if mem.total == 0 else mem.used / mem.total
+    gpu_mem_percent = 0 if gpu.mem_total == 0 else gpu.mem_used / gpu.mem_total
+
     return UtilizationSummary(
         cpu,
         gpu.usage,
         mem.used,
         mem.total,
-        mem.used / mem.total,
+        mem_percent,
         gpu.mem_used,
         gpu.mem_total,
-        gpu.mem_used / gpu.mem_total
+        gpu_mem_percent
     )

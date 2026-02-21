@@ -43,6 +43,7 @@ def log(msg: str) -> None:
 def run(cmd: str) -> int:
     return subprocess.run(cmd, shell=True).returncode
 
+
 def install_llama_cpp_python() -> None:
     # llama-cpp-python supported backends for JamePeng's fork
     # https://github.com/JamePeng/llama-cpp-python?tab=readme-ov-file#supported-backends
@@ -84,10 +85,9 @@ def is_installed(module: str) -> bool:
     out = subprocess.check_output("uv pip list").decode("utf-8")
     return normalize(module) in normalize(out)
 
+
 def main() -> None:
-    """
-    Installer & runner entry point.
-    """
+    """ Installer & runner entry point. """
 
     log(f"Python: {platform.python_version()} - {platform.python_compiler()}")
 
