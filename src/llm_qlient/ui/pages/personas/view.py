@@ -1,12 +1,16 @@
 """
 
-    llm-qlient  -  Qt desktop client for interacting with local LLMs
+    llm-qlient • Qt desktop client for interacting with local LLMs
 
     This file is a part of the llm-qlient
     project and distributed under MIT license.
-    https://github.com/kadir014/llm-qlient
+
+    Repository: https://github.com/kadir014/llm-qlient
+    Issues:     https://github.com/kadir014/llm-qlient/issues
 
 """
+
+from pathlib import Path
 
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtWidgets import QWidget, QVBoxLayout
@@ -17,6 +21,8 @@ from freshqt.animation import Tween, Easing
 
 from llm_qlient import shared
 from llm_qlient.core import log
+from llm_qlient.core.content import load_content
+from llm_qlient.core.models import UserPersona
 from llm_qlient.ui.pages.base_view import BaseView
 
 

@@ -1,6 +1,6 @@
 [project]
 name = "llm-qlient"
-description = "Qt-based desktop client for interacting with local LLMs"
+description = "Qt desktop client for interacting with local LLMs"
 version = "0.0.1"
 readme = "README.md"
 authors = [

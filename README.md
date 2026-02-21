@@ -12,11 +12,19 @@ Qt-based lightweight desktop user interface for interacting with local Large Lan
 </p>
 
 
+# Features
+- Easy to use, modern interface
+- Simple character and user persona setup
+- Unified inference for most models and quantizations
+  - [X] GGUF
+  - [ ] Safetensors
+  - [ ] EXL2 & EXL2
+
 
 # Installation
 ❗ **Prerequisite:** Python 3.12+ is required.
 
-## Easy Installation
+## » Easy Installation
 LLM-Qlient provides an easy installation & running script called `run.py`. It is less customizable and chooses a predefined inference backend for the user. So, if you want to customize what you want in your installation, please refer to [Manual Installation](#Manual-Installation).
 
 First, clone the repository.
@@ -24,12 +32,12 @@ First, clone the repository.
 $ git clone https://github.com/kadir014/llm-qlient.git
 $ cd llm-qlient
 ```
-Then just run the installation script and answer the questions.
+Then just run the runner script. You can use `-h` for usage.
 ```shell
 $ python run.py
 ```
 
-## Manual Installation
+## » Manual Installation
 Clone the repository.
 ```shell
 $ git clone https://github.com/kadir014/llm-qlient.git
