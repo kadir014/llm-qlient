@@ -12,7 +12,7 @@
 
 import queue
 
-from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtCore import QThread, pyqtSignal, pyqtSlot
 
 from panllm import GenerationConfig, ChatChunk
 
@@ -52,10 +52,12 @@ class Generator(QThread):
         """ Is the thread still generating new tokens? """
         return self._is_generating
     
+    @pyqtSlot(GenerationRequest)
     def start_gen(self, request: GenerationRequest) -> None:
         """ Start generating. """
         self._queue.put(request)
 
+    @pyqtSlot()
     def stop_gen(self) -> None:
         """ Stop generating. """
         self._is_generating = False

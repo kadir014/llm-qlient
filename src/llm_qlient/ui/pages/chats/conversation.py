@@ -79,6 +79,15 @@ class InputComposer(QWidget, Themeable):
         shared.theme.add_widget(self.continue_btn)
         buttons_lyt.addWidget(self.continue_btn)
 
+        self.stop_btn = Button(icon_name="hi-pause", variant=Button.Variant.GHOST)
+        self.stop_btn.setFixedSize(btn_height, btn_height)
+        self.stop_btn.setIconSize(QSize(icon_height, icon_height))
+        self.stop_btn.border_radius = -1
+        shared.theme.add_widget(self.stop_btn)
+        buttons_lyt.addWidget(self.stop_btn)
+
+        self.set_buttons_state(False)
+
     def update_theme(self, theme: Theme) -> None:
         font_size = int(round(theme.get_typo_size(TypographyType.BODY) * theme.font_scale))
         if font_size <= 0:
@@ -103,6 +112,30 @@ class InputComposer(QWidget, Themeable):
     def clear_message(self) -> None:
         """ Clear input message text. """
         self.editor.clear()
+
+    def set_buttons_state(self, generating: bool) -> None:
+        """
+        Set control buttons state.
+
+        Either show action buttons or show the stop button.
+        
+        Parameters
+        ----------
+        generating
+            Generation state
+        """
+
+        if generating:
+            self.send_btn.hide()
+            self.retry_btn.hide()
+            self.continue_btn.hide()
+            self.stop_btn.show()
+
+        else:
+            self.send_btn.show()
+            self.retry_btn.show()
+            self.continue_btn.show()
+            self.stop_btn.hide()
 
 
 def recursive_clear(
@@ -564,8 +597,10 @@ class ConversationController(QObject):
 
         self.view.toggle_disclaimer_state(len(shared.convos) == 0)
 
-        self.view.input_composer.send_btn.clicked.connect(self.send)
-        self.view.input_composer.retry_btn.clicked.connect(self.retry)
+        self.view.input_composer.send_btn.clicked.connect(self.send_new)
+        self.view.input_composer.retry_btn.clicked.connect(self.retry_last)
+        self.view.input_composer.continue_btn.clicked.connect(self.continue_last)
+        self.view.input_composer.stop_btn.clicked.connect(shared.gen.stop_gen)
 
         self.change_conversation_index(0)
 
@@ -573,17 +608,17 @@ class ConversationController(QObject):
         shared.gen.generation_finished.connect(self._generation_finished)
         shared.gen.new_chat_chunk.connect(self._new_chat_chunk)
 
-    def send(self) -> None:
+    def send_new(self) -> None:
         """ Send current message to current conversation. """
 
         if shared.gen.is_generating:
-            log.debug("Already generating, skipping send.")
+            log.debug("Already generating, skipping 'send'.")
             return
 
         text = self.view.input_composer.get_message().strip()
 
         if not text:
-            log.debug("Input message is empty, skipping send.")
+            log.debug("Input message is empty, skipping 'send'.")
             return
 
         self.view.input_composer.clear_message()
@@ -595,18 +630,18 @@ class ConversationController(QObject):
 
         shared.gen.start_gen(GenerationRequest(curr_convo, "new"))
 
-    def retry(self) -> None:
+    def retry_last(self) -> None:
         """ Regenerate the last assistant message. """
 
         if shared.gen.is_generating:
-            log.debug("Already generating, skipping retry.")
+            log.debug("Already generating, skipping 'retry'.")
             return
 
         if self.stream_msg is None or self.stream_bubble is None:
             self.get_last_assistant_message()
 
             if self.stream_msg is None or self.stream_bubble is None:
-                log.debug("No assistant message found yet, skipping retry.")
+                log.debug("No assistant message found yet, skipping 'retry'.")
                 return
 
         self.stream_msg.content = ""
@@ -614,6 +649,23 @@ class ConversationController(QObject):
 
         curr_convo = shared.convos[shared.current_convo_idx]
         shared.gen.start_gen(GenerationRequest(curr_convo, "retry"))
+
+    def continue_last(self) -> None:
+        """ Continue generating the last assistant message. """
+
+        if shared.gen.is_generating:
+            log.debug("Already generating, skipping 'continue'.")
+            return
+        
+        if self.stream_msg is None or self.stream_bubble is None:
+            self.get_last_assistant_message()
+
+            if self.stream_msg is None or self.stream_bubble is None:
+                log.debug("No assistant message found yet, skipping 'continue'.")
+                return
+            
+        curr_convo = shared.convos[shared.current_convo_idx]
+        shared.gen.start_gen(GenerationRequest(curr_convo, "continue"))
 
     def change_conversation_index(self, convo_idx: int) -> None:
         """ Change current conversation index and load it. """
@@ -645,12 +697,16 @@ class ConversationController(QObject):
             self.stream_msg = curr_convo.add("assistant", "")
             self.stream_bubble = self.view.add_bubble(self.stream_msg, curr_convo.character)
 
+        self.view.input_composer.set_buttons_state(True)
+
     @pyqtSlot(str, ChatChunk)
     def _generation_finished(self, mode: str, chunk: ChatChunk) -> None:
         # Clear the old non-formatted streamed text and add the formatted version
         self.stream_bubble.clear_content()
-        self.stream_bubble.add_content(chunk.content)
+        self.stream_bubble.add_content(self.stream_msg.content)
         self.stream_bubble.set_word_wrapping(True)
+
+        self.view.input_composer.set_buttons_state(False)
 
     @pyqtSlot(str, ChatChunk)
     def _new_chat_chunk(self, mode: str, chunk: ChatChunk) -> None:
@@ -664,7 +720,8 @@ class ConversationController(QObject):
         if len(self.stream_bubble.content) == 0:
             self.stream_bubble.add_content("")
 
-        self.stream_bubble.content[0].setText(self.stream_msg.content)
+        # -1 so 'continue' mode can append to the latest content element
+        self.stream_bubble.content[-1].setText(self.stream_msg.content)
         self.stream_bubble.set_word_wrapping(True)
 
         self.view.content_scroller.ensureWidgetVisible(self.stream_bubble)
