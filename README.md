@@ -1,7 +1,7 @@
 <br>
-<h1 align="center">
+<p align="center">
   <img src="data/gh/llmqlientthumb_1920.png" width=600>
-</h1>
+</p>
 
 <p align="center">
   <a href="https://github.com/kadir014/llm-qlient/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
@@ -14,20 +14,23 @@ Qt-based lightweight desktop user interface for interacting with local Large Lan
 </p>
 
 
+
 # Features
 - Easy to use, modern interface
-- Simple character and user persona setup
+- Simple assistant character and user persona setup
+- Customizable themeing
 - Unified inference for most models and quantizations
   - [X] GGUF
   - [ ] Safetensors
-  - [ ] EXL2 & EXL2
+  - [ ] EXL2 & EXL3
+
 
 
 # Installation
 ❗ **Prerequisite:** Python 3.12+ is required.
 
 ## » Easy Installation
-LLM-Qlient provides an easy installation & running script called `run.py`. It is less customizable and chooses a predefined inference backend for the user. So, if you want to customize what you want in your installation, please refer to [Manual Installation](#Manual-Installation).
+LLM-Qlient provides an easy installation & running script called `run.py`. It is less customizable and chooses a predefined inference backend for the user. So, if you want to customize what you want in your installation, please refer to [Manual Installation](#-Manual-Installation).
 
 First, clone the repository.
 ```shell
@@ -65,25 +68,25 @@ At this stage, you need to install an inference backend dependencies. It doesn't
   $ uv pip install "llama-cpp-python @ git+https://github.com/JamePeng/llama-cpp-python.git"
   ```
   
-- **Transformers:**
+- **Transformers:** *Not supported yet*
 
-  TODO
+- **ExLLamaV2:** *Not supported yet*
 
-- **ExLLamaV2:**
-
-  TODO
-
-- **ExLLamaV3:**
-
-  TODO
+- **ExLLamaV3:** *Not supported yet*
 
 After setting up the environment properly, you can finally run the app.
 ```shell
 $ uv run main --debug
 ```
 
+
+
 # License
-[MIT](LICENSE) © Kadir Aksoy
+**LLM-Qlient** project is [licensed under MIT License](LICENSE).
+
+See [Third Party Licenses](NOTICE).
+
+<br>
 
 If you enjoy my projects, I'd greatly appreciate if you wanted to support me & my studies! ❤️
 
