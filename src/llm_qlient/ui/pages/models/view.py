@@ -25,6 +25,7 @@ from panllm import LLM, LLMConfig, LLMBackend
 
 from llm_qlient import shared
 from llm_qlient.core import log
+from llm_qlient.core.types import SettingsDict
 from llm_qlient.ui.pages.base_view import BaseView
 from llm_qlient.ui.factories import *
 
@@ -93,11 +94,6 @@ class ModelPanel(QWidget, Themeable):
         shared.theme.add_widget(self.unload_btn)
         btns_lyt.addWidget(self.unload_btn)
 
-        self.__theme: Theme | None = None
-
-    def update_theme(self, theme: Theme) ->  None:
-        self.__theme = theme
-
     def update_model_info(self) -> None:
         """ Update model information labels. """
 
@@ -119,8 +115,6 @@ class ModelPanel(QWidget, Themeable):
         self.type_lbl.setText(model_type.upper())
     
     def paintEvent(self, e) -> None:
-        if self.__theme is None: return
-
         pt = QPainter(self)
         pt.setRenderHint(QPainter.RenderHint.Antialiasing, on=True)
 
@@ -131,7 +125,8 @@ class ModelPanel(QWidget, Themeable):
         clippath.addRoundedRect(0, 0, w, h, border_r, border_r)
         pt.setClipPath(clippath)
 
-        pt.fillRect(0, 0, w, h, self.__theme.qcolor(self.__theme.palette.background_tertiary))
+        bg_color = shared.theme.qcolor(shared.theme.palette.background_tertiary)
+        pt.fillRect(0, 0, w, h, bg_color)
 
 
 class ModelConfiguration(QWidget):
@@ -204,11 +199,19 @@ class Controller:
     def __init__(self, view: View) -> None:
         self.view = view
 
-        self.view.model_panel.browse_btn.clicked.connect(self.browse)
-        self.view.model_panel.load_btn.clicked.connect(self.load_model)
+        self.view.model_panel.browse_btn.clicked.connect(self.browse_models)
+        self.view.model_panel.load_btn.clicked.connect(self.load_current_model)
         self.view.model_panel.unload_btn.clicked.connect(self.unload_model)
 
-    def browse(self) -> None:
+        shared.settings.changed.connect(self._settings_changed)
+
+    def _settings_changed(self, changed: SettingsDict) -> None:
+        if "model_path" in changed and changed["model_path"] is not None:
+            self.load_model(changed["model_path"])
+
+    def browse_models(self) -> None:
+        """ Browse filesytem for models. """
+
         path = QFileDialog.getOpenFileName(
             self.view,
             "Chose model to load",
@@ -219,16 +222,22 @@ class Controller:
         if path:
             self.view.model_panel.load_input.setText(path)
 
-    def load_model(self) -> None:
-        path = self.view.model_panel.load_input.text()
+    def load_model(self, path: str) -> None:
+        """
+        Load the LLM model at given filepath.
+
+        Parameters
+        ----------
+        path
+            Path to try load the model from
+        """
         
         # if not path or not (os.path.exists(path) and os.path.isdir(path) and os.listdir(path)):
         #     log.debug(f"<fg.yellow>'{path}'</> is not a valid directory.")
         #     return
 
         # Unload the previously loaded model
-        if shared.model is not None:
-            shared.model.release()
+        self.unload_model()
         
         cfg = LLMConfig(path, 32 * 320, verbose=False)
         try:
@@ -236,16 +245,27 @@ class Controller:
             shared.model = LLM(cfg, LLMBackend.LLAMA_CPP)
             _elapsed = perf_counter() - _start
             log.info(f"Model loaded successfully in <fg.lightcyan>{round(_elapsed,2)}s</> at <fg.darkgray>'{path}'</>")
+
         except Exception as e:
             log.error(f"Failed to load model at <fg.darkgray>'{path}'</>. Exception:\n{e}")
 
         self.view.model_panel.update_model_info()
 
+    def load_current_model(self) -> None:
+        """ Load the current model given in search interface. """
+
+        path = self.view.model_panel.load_input.text()
+        shared.settings["model_path"] = path
+
     def unload_model(self) -> None:
+        """ Unload the current model. """
+
         if shared.model is not None:
             shared.model.release()
 
-        shared.model = None
+        shared.model = LLM(LLMConfig(""), LLMBackend.DUMMY)
+
+        shared.settings["model_path"] = None
 
         self.view.model_panel.update_model_info()
 

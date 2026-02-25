@@ -11,15 +11,14 @@
 """
 
 import platform
+from pathlib import Path
 
-from PyQt6.QtCore import Qt, QSize, QT_VERSION_STR, PYQT_VERSION_STR
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QLineEdit, QScrollArea
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QLineEdit, QScrollArea, QFileDialog
 from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor
 from freshqt.core import TypographyType
-from freshqt.core import __version__ as __freshqt_version__
 from freshqt.widgets import Button, Divider, TypoLabel, Switch, LineEdit, BadgeLabel
 from freshqt.animation import Tween, Easing
-from panllm import __version__ as __panllm_version__
 
 from llm_qlient import shared
 from llm_qlient.core import log
@@ -69,6 +68,23 @@ class View(BaseView):
 
         self.content_lyt.addSpacing(9)
 
+        self.setting_desc(
+            "Theme",
+            "Filepath to global application theme to use.\nYou can use the native ones with the indicator \"builtin: ...\".",
+            "theme",
+            browse_file=True
+        )
+
+        hdivider(3, self.content_lyt)
+
+        self.setting_desc(
+            "Center conversation view",
+            "Try to center conversation view relative to viewport instead of its layout.\nMight be more visually appealing for some.",
+            "center_conversation_view"
+        )
+
+        hdivider(3, self.content_lyt)
+
         self.setting("Show system metrics", "system_metrics_show")
 
         self.setting_desc(
@@ -104,7 +120,12 @@ class View(BaseView):
             def sw_slot():
                 shared.settings[setting] = sw.on
 
-    def setting_desc(self, text: str, desc: str, setting: str | None = None) -> None:
+    def setting_desc(self,
+            text: str,
+            desc: str,
+            setting: str | None = None,
+            browse_file: bool = False
+            ) -> None:
         setting_lyt = QHBoxLayout()
         setting_lyt.setContentsMargins(0, 0, 0, 0)
         self.content_lyt.addLayout(setting_lyt)
@@ -135,20 +156,41 @@ class View(BaseView):
                     shared.settings[setting] = sw.on
 
             elif isinstance(shared.settings[setting], str):
+                line_lyt = QHBoxLayout()
+                line_lyt.setContentsMargins(0, 0, 0, 0)
+                desc_lyt.addLayout(line_lyt)
+
                 line = LineEdit(shared.settings[setting])
                 shared.theme.add_widget(line)
-                desc_lyt.addWidget(line)
+                line_lyt.addWidget(line)
 
-                @line.textChanged.connect
+                @line.editingFinished.connect
                 def line_slot():
                     shared.settings[setting] = line.text()
+
+                if browse_file:
+                    browse_btn = Button(icon_name="hi-magnifying-glass", variant=Button.Variant.OUTLINE)
+                    browse_btn.border_radius = -1
+                    browse_btn.setFixedSize(35, 35)
+                    shared.theme.add_widget(browse_btn)
+                    line_lyt.addWidget(browse_btn)
+
+                    @browse_btn.clicked.connect
+                    def browse_slot():
+                        path = QFileDialog.getOpenFileName(
+                            self,
+                            str(Path.cwd().absolute()),
+                        )[0]
+
+                        line.setText(path)
+                        shared.settings[setting] = path
 
             elif isinstance(shared.settings[setting], float):
                 line = LineEdit(str(shared.settings[setting]))
                 shared.theme.add_widget(line)
                 desc_lyt.addWidget(line)
 
-                @line.textChanged.connect
+                @line.editingFinished.connect
                 def line_slot():
                     value = line.text()
                     
@@ -172,10 +214,10 @@ class View(BaseView):
 
         versions = (
             ("Python", f"{platform.python_version()} - {platform.python_compiler()}"),
-            ("Qt", QT_VERSION_STR),
-            ("PyQt", PYQT_VERSION_STR),
-            ("FreshQt", __freshqt_version__),
-            ("PanLLM", __panllm_version__),
+            ("Qt", shared.__qt_version__),
+            ("PyQt", shared.__pyqt_version__),
+            ("FreshQt", shared.__freshqt__version__),
+            ("PanLLM", shared.__panllm_version__),
             ("LLM Qlient", shared.__version__)
         )
         for name, version in versions:

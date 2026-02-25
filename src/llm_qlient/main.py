@@ -34,6 +34,11 @@ def log_diag() -> None:
     log.debug(f"Platform: {platform.platform()}")
     log.debug(f"Arch: {platform.machine()}")
     log.debug(f"Python: {platform.python_version()} {platform.python_compiler()}")
+    log.debug(f"Qt: {shared.__qt_version__}")
+    log.debug(f"PyQt: {shared.__pyqt_version__}")
+    log.debug(f"FreshQt: {shared.__freshqt__version__}")
+    log.debug(f"PanLLM: {shared.__panllm_version__}")
+    log.debug(f"LLM Qlient: {shared.__version__}")
 
 
 def main() -> None:

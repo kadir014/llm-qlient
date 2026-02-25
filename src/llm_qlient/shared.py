@@ -20,8 +20,19 @@ from llm_qlient.core.models import Conversation, UserPersona, Character
 from llm_qlient.core.generator import Generator
 
 
+################################################################################
+#                                                                              #
+#                                   Runtime                                    #
+#                                                                              #
+################################################################################
+
 # LLM Qlient version
 __version__ = "0.0.1"
+
+from PyQt6.QtCore import QT_VERSION_STR as __qt_version__
+from PyQt6.QtCore import PYQT_VERSION_STR as __pyqt_version__
+from freshqt.core import __version__ as __freshqt__version__
+from panllm import __version__ as __panllm_version__
 
 
 ################################################################################
@@ -71,6 +82,12 @@ gen: Generator | None = None
 ################################################################################
 
 settings = Settings({
+    "theme": "builtin:Catppuccin Mocha",
+
+    "model_path": None,
+
+    "center_conversation_view": True,
+
     "system_metrics_show": True,
     "system_metrics_interval": 2.0,
     "system_metrics_formatter": "CPU: {cpu}%     ┆     GPU: {gpu}%     ┆     RAM: {ram_used}GB     ┆     VRAM: {vram_used}GB"

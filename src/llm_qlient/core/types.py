@@ -10,9 +10,13 @@
 
 """
 
+from typing import Any
+
 from pathlib import Path
 
 
 PathLike = str | bytes | Path
 
 JSONContent = dict | list[dict]
+
+SettingsDict = dict[str, Any]

@@ -19,6 +19,7 @@ from freshqt.animation import Tween, Easing
 
 from llm_qlient import shared
 from llm_qlient.core import log
+from llm_qlient.core.types import SettingsDict
 from llm_qlient.core.sysinfo import get_utilization_summary, UtilizationSummary
 
 
@@ -90,18 +91,21 @@ class StatusBar(QWidget):
     def _update_util_label(self, util: UtilizationSummary) -> None:
         template = shared.settings["system_metrics_formatter"]
 
-        rendered = template
-        rendered = rendered.replace("{cpu}", str(round(util.cpu * 100.0, 1)))
-        rendered = rendered.replace("{gpu}", str(round(util.gpu * 100.0, 1)))
-        rendered = rendered.replace("{ram_total}", str(round(util.ram_total / 1073741824.0, 1)))
-        rendered = rendered.replace("{ram_used}", str(round(util.ram_used / 1073741824.0, 1)))
-        rendered = rendered.replace("{ram_percent}", str(round(util.ram_percent * 100.0, 1)))
-        rendered = rendered.replace("{vram_total}", str(round(util.vram_total / 1073741824.0, 1)))
-        rendered = rendered.replace("{vram_used}", str(round(util.vram_used / 1073741824.0, 1)))
-        rendered = rendered.replace("{vram_percent}", str(round(util.vram_percent * 100.0, 1)))
+        render = template
+        render = render.replace("{cpu}", str(round(util.cpu * 100.0, 1)))
+        render = render.replace("{gpu}", str(round(util.gpu * 100.0, 1)))
+        render = render.replace("{ram_total}", str(round(util.ram_total / 1073741824.0, 1)))
+        render = render.replace("{ram_used}", str(round(util.ram_used / 1073741824.0, 1)))
+        render = render.replace("{ram_percent}", str(round(util.ram_percent * 100.0, 1)))
+        render = render.replace("{vram_total}", str(round(util.vram_total / 1073741824.0, 1)))
+        render = render.replace("{vram_used}", str(round(util.vram_used / 1073741824.0, 1)))
+        render = render.replace("{vram_percent}", str(round(util.vram_percent * 100.0, 1)))
 
-        self.utilization_lbl.setText(rendered)
+        self.utilization_lbl.setText(render)
 
-    def _settings_changed(self) -> None:
-        self.utilization_lbl.setVisible(shared.settings["system_metrics_show"])
-        self.util_thrd.interval_sec = float(shared.settings["system_metrics_interval"])
+    def _settings_changed(self, changed: SettingsDict) -> None:
+        if "system_metrics_show" in changed:
+            self.utilization_lbl.setVisible(changed["system_metrics_show"])
+
+        if "system_metrics_interval" in changed:
+            self.util_thrd.interval_sec = float(changed["system_metrics_interval"])

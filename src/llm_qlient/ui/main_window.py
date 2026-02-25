@@ -109,7 +109,7 @@ class MainWindow(QWidget, Themeable):
         else:
             log.info("Titlebar themeing is only supported on Windows currently.")
 
-        log.info(f"Changed theme to <fg.magenta>{theme.palette.name}</>")
+        log.debug(f"Changed theme to <fg.magenta>{theme.palette.name}</>")
 
         self.setStyleSheet(f"""
             QWidget#bg_primary {{

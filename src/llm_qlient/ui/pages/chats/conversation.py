@@ -306,6 +306,27 @@ class ConversationBubble(QWidget, Themeable):
 
         self.setFixedWidth(min(max_width, 880))
 
+    def _add_subcontent_label(self, content: str) -> None:
+        content = content.replace("\n", "\n\n")
+        lbl = TypoLabel(content)
+        lbl.setWordWrap(False)
+        lbl.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.LinksAccessibleByMouse)
+        lbl.setTextFormat(Qt.TextFormat.MarkdownText)
+        shared.theme.add_widget(lbl)
+        self.content_lyt.addWidget(lbl)
+        self.__content_wdgs.append(lbl)
+
+    def _add_subcontent_code(self, content: str) -> None:
+        code = Code()
+        code.text = content.strip()
+        code.language = SyntaxLanguage.PYTHON
+        code.hide_status_bar()
+        code.set_readonly(True)
+        code.setMaximumHeight(250)
+        shared.theme.add_widget(code)
+        self.content_lyt.addWidget(code)
+        self.__content_wdgs.append(code)
+
     def add_content(self, content: str) -> QWidget:
         """
         Add new content.
@@ -328,21 +349,9 @@ class ConversationBubble(QWidget, Themeable):
             if char == "`" and content[i + 1] == "`" and content[i + 2] == "`":
 
                 if entered_code_block:
-                    lbl = TypoLabel(subcontent)
-                    lbl.setWordWrap(False)
-                    shared.theme.add_widget(lbl)
-                    self.content_lyt.addWidget(lbl)
-                    self.__content_wdgs.append(lbl)
+                    self._add_subcontent_label(subcontent)
                 else:
-                    code = Code()
-                    code.text = subcontent.strip()
-                    code.language = SyntaxLanguage.PYTHON
-                    code.hide_status_bar()
-                    code.set_readonly(True)
-                    code.setMaximumHeight(250)
-                    shared.theme.add_widget(code)
-                    self.content_lyt.addWidget(code)
-                    self.__content_wdgs.append(code)
+                    self._add_subcontent_code(subcontent)
 
                 entered_code_block = not entered_code_block
 
@@ -355,21 +364,9 @@ class ConversationBubble(QWidget, Themeable):
 
         # End of text, add according to last state
         if entered_code_block:
-            lbl = TypoLabel(subcontent)
-            lbl.setWordWrap(False)
-            shared.theme.add_widget(lbl)
-            self.content_lyt.addWidget(lbl)
-            self.__content_wdgs.append(lbl)
+            self._add_subcontent_label(subcontent)
         else:
-            code = Code()
-            code.text = subcontent.strip()
-            code.language = SyntaxLanguage.PYTHON
-            code.hide_status_bar()
-            code.set_readonly(True)
-            code.setMaximumHeight(250)
-            shared.theme.add_widget(code)
-            self.content_lyt.addWidget(code)
-            self.__content_wdgs.append(code)
+            self._add_subcontent_code(subcontent)
 
         return self.__content_wdgs[-1]
 
@@ -724,7 +721,7 @@ class ConversationController(QObject):
         self.stream_bubble.content[-1].setText(self.stream_msg.content)
         self.stream_bubble.set_word_wrapping(True)
 
-        self.view.content_scroller.ensureWidgetVisible(self.stream_bubble)
+        self.view.content_scroller.ensureWidgetVisible(self.stream_bubble, yMargin=120)
 
     def _chat_history_entry_clicked(self, convo: Conversation) -> None:
         for i, convo_ in enumerate(shared.convos):

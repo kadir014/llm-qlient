@@ -23,12 +23,14 @@ from panllm import LLM, LLMBackend, LLMConfig
 
 from llm_qlient import shared
 from llm_qlient.core import log
+from llm_qlient.core.types import SettingsDict
 from llm_qlient.core.content import load_content
 from llm_qlient.core.models import Conversation, UserPersona
 from llm_qlient.core.generator import Generator
 from llm_qlient.ui.main_window import MainWindow
 
-from freshqt.palettes.catppuccin import UI_CATPPUCCIN_MOCHA, UI_CATPPUCCIN_LATTE
+from freshqt.palettes.catppuccin import UI_CATPPUCCIN_MOCHA, UI_CATPPUCCIN_LATTE, UI_CATPPUCCIN_FRAPPE
+from freshqt.palettes.dracula import UI_DRACULA, UI_ALUCARD
 
 
 class App:
@@ -72,6 +74,8 @@ class App:
 
         shared.theme.font_family = "Outfit"
         shared.theme.update_palette(UI_CATPPUCCIN_MOCHA)
+
+        shared.settings.changed.connect(self._settings_changed)
 
         self._load_content()
 
@@ -126,12 +130,33 @@ class App:
 
         log.info(f"Loaded <fg.lightcyan>{len(shared.personas)}</> user personas successfully.")
 
+    def _settings_changed(self, changed: SettingsDict) -> None:
+        if "theme" in changed:
+            if changed["theme"].startswith("builtin:"):
+                theme_name = changed["theme"].replace("builtin:", "").strip().lower()
+                themes = {
+                    "catppuccin mocha": UI_CATPPUCCIN_MOCHA,
+                    "catppuccin frappe": UI_CATPPUCCIN_FRAPPE,
+                    "catppuccin latte": UI_CATPPUCCIN_LATTE,
+                    "dracula": UI_DRACULA,
+                    "alucard": UI_ALUCARD
+                }
+
+                if theme_name not in themes:
+                    theme_name = "catppuccin mocha"
+
+                theme = themes[theme_name]
+
+                shared.theme.font_family = "Outfit"
+                shared.theme.update_palette(theme)
+
     def cleanup(self) -> None:
         shared.gen.should_run = False
         shared.gen._queue.shutdown()
         shared.gen.wait(5000)
 
-        shared.model.release()
+        if shared.model is not None:
+            shared.model.release()
 
     def run(self) -> int:
         self.mainwindow.show()
@@ -143,6 +168,6 @@ class App:
 
         # Emit settings signal once so all widgets listening to setting
         # changes can initialize themselves
-        shared.settings.changed.emit()
+        shared.settings._update(front=True)
 
         return self.qapp.exec()
