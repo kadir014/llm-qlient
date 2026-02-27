@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel
 from PyQt6.QtGui import QPainter, QPainterPath, QColor
 from freshqt.widgets import Button, TypoLabel
 from freshqt.animation import Tween, Easing
+from freshqt.core.color import WCAG, WCAG_NORMAL_TEXT
 
 from llm_qlient import shared
 
@@ -39,7 +40,11 @@ class Toast(QWidget):
         self.setStyleSheet("background: none;")
         self.setFixedSize(210, 60)
 
+        self.bg_color = QColor(0, 0, 0, 220)
+
         text_color = shared.theme.qcolor(shared.theme.palette.text_primary)
+        if WCAG(text_color, self.bg_color) < WCAG_NORMAL_TEXT:
+            text_color = shared.theme.qcolor(shared.theme.palette.text_fallback)
 
         layout = QHBoxLayout()
         layout.setContentsMargins(10, 10, 10, 10)
@@ -127,8 +132,7 @@ class Toast(QWidget):
         clippath.addRoundedRect(0, 0, w, h, border_r, border_r)
         pt.setClipPath(clippath)
 
-        bg_color = QColor(0, 0, 0, 220)
-        pt.fillRect(0, 0, w, h, bg_color)
+        pt.fillRect(0, 0, w, h, self.bg_color)
 
         self._move()
 
