@@ -18,7 +18,6 @@ from PyQt6.QtCore import Qt, QObject, QSize, QThread, pyqtSlot, pyqtSignal
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QLineEdit, QScrollArea, QLayout, QFileDialog
 from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor
 from freshqt.core import TypographyType, Theme, Themeable
-from freshqt.core import __version__ as __freshqt_version__
 from freshqt.widgets import Button, Divider, TypoLabel, Switch, LineEdit, BadgeLabel
 from freshqt.animation import Tween, Easing
 from panllm import LLM, LLMConfig, LLMBackend
@@ -281,7 +280,7 @@ class Controller(QObject):
         #     return
 
         # Unload the previously loaded model
-        self.unload_model()
+        self.unload_model(notify=False)
         
         shared.toasts.info("Loading model...")
 
@@ -302,15 +301,20 @@ class Controller(QObject):
         shared.settings["model_path"] = None
         self.unload_model()
 
-    def unload_model(self) -> None:
+    def unload_model(self, notify: bool = True) -> None:
         """ Unload the current model. """
 
         if shared.model is not None and shared.model.backend != LLMBackend.DUMMY:
             shared.model.release()
-            shared.toasts.success("Model unloaded.")
+
+            if notify:
+                shared.toasts.success("Model unloaded.")
+
+        elif notify:
+            shared.toasts.info("No model to unload.")
 
         shared.model = LLM(LLMConfig(""), LLMBackend.DUMMY)
 
         self.view.model_panel.update_model_info()
 
-        log.info(f"Model unloaded successfully")
+        log.debug(f"Model unloaded & panel updated.")
