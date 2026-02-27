@@ -68,7 +68,7 @@ class View(BaseView):
 
         self.content_lyt.addSpacing(9)
 
-        self.setting_desc(
+        self.setting(
             "Theme",
             "Filepath to global application theme to use.\nYou can use the native ones with the indicator \"builtin: ...\".",
             "theme",
@@ -77,7 +77,7 @@ class View(BaseView):
 
         hdivider(3, self.content_lyt)
 
-        self.setting_desc(
+        self.setting(
             "Center conversation view",
             "Try to center conversation view relative to viewport instead of its layout.\nMight be more visually appealing for some.",
             "center_conversation_view"
@@ -85,15 +85,15 @@ class View(BaseView):
 
         hdivider(3, self.content_lyt)
 
-        self.setting("Show system metrics", "system_metrics_show")
+        self.setting("Show system metrics", "", "system_metrics_show")
 
-        self.setting_desc(
+        self.setting(
             "System metrics update frequency",
             "Controls how often the system metrics are refreshed, in seconds.",
             "system_metrics_interval"
         )
 
-        self.setting_desc(
+        self.setting(
             "System metrics display format",
             "Customize the text shown for system metrics in the status bar. For example <code>\"CPU usage: {cpu}%\"</code>.",
             "system_metrics_formatter"
@@ -101,31 +101,27 @@ class View(BaseView):
 
         self.version_section()
 
-    def setting(self, text: str, setting: str) -> None:
-        setting_lyt = QHBoxLayout()
-        setting_lyt.setContentsMargins(0, 0, 0, 0)
-        self.content_lyt.addLayout(setting_lyt)
-
-        lbl = TypoLabel(text, TypographyType.SUBTITLE)
-        shared.theme.add_widget(lbl)
-        setting_lyt.addWidget(lbl, alignment=Qt.AlignmentFlag.AlignLeft)
-
-        if isinstance(shared.settings[setting], bool):
-            sw = Switch(on=shared.settings[setting])
-            sw.setFixedSize(55, 25)
-            shared.theme.add_widget(sw)
-            setting_lyt.addWidget(sw, alignment=Qt.AlignmentFlag.AlignRight)
-
-            @sw.toggled.connect
-            def sw_slot():
-                shared.settings[setting] = sw.on
-
-    def setting_desc(self,
+    def setting(self,
             text: str,
             desc: str,
             setting: str | None = None,
             browse_file: bool = False
             ) -> None:
+        """
+        Add new setting section.
+
+        Parameters
+        ----------
+        text
+            Short title for the setting
+        desc
+            Description of setting
+        setting
+            Setting key
+        browse_file
+            Whether to add a file browsing option to text input
+        """
+
         setting_lyt = QHBoxLayout()
         setting_lyt.setContentsMargins(0, 0, 0, 0)
         self.content_lyt.addLayout(setting_lyt)
@@ -139,10 +135,11 @@ class View(BaseView):
         shared.theme.add_widget(lbl)
         desc_lyt.addWidget(lbl, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        lbl = TypoLabel(desc, TypographyType.BODY)
-        lbl.color = "text_secondary"
-        shared.theme.add_widget(lbl)
-        desc_lyt.addWidget(lbl, alignment=Qt.AlignmentFlag.AlignLeft)
+        if desc:
+            lbl = TypoLabel(desc, TypographyType.BODY)
+            lbl.color = "text_secondary"
+            shared.theme.add_widget(lbl)
+            desc_lyt.addWidget(lbl, alignment=Qt.AlignmentFlag.AlignLeft)
 
         if setting is not None:
             if isinstance(shared.settings[setting], bool):
@@ -203,6 +200,8 @@ class View(BaseView):
                     line.setText(str(value))
         
     def version_section(self) -> None:
+        """ Add a version information section. """
+
         desc_lyt = QVBoxLayout()
         desc_lyt.setContentsMargins(0, 0, 0, 0)
         desc_lyt.setSpacing(10)

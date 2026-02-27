@@ -25,6 +25,7 @@ from llm_qlient.core import log
 from llm_qlient.core.models import Page
 from llm_qlient.ui.widgets.sidebar import SideBar
 from llm_qlient.ui.widgets.statusbar import StatusBar
+from llm_qlient.ui.widgets.toast import ToastManager
 
 
 class MainWindow(QWidget, Themeable):
@@ -198,3 +199,7 @@ class MainWindow(QWidget, Themeable):
             page.view.hide()
 
             self.page_area_lyt.addWidget(page.view)
+
+    def resizeEvent(self, e) -> None:
+        super().resizeEvent(e)
+        shared.window_resize.emit()

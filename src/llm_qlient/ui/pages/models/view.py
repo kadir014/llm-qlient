@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 from time import perf_counter
 
-from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtCore import Qt, QObject, QSize, QThread, pyqtSlot, pyqtSignal
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QLineEdit, QScrollArea, QLayout, QFileDialog
 from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor
 from freshqt.core import TypographyType, Theme, Themeable
@@ -94,6 +94,7 @@ class ModelPanel(QWidget, Themeable):
         shared.theme.add_widget(self.unload_btn)
         btns_lyt.addWidget(self.unload_btn)
 
+    @pyqtSlot()
     def update_model_info(self) -> None:
         """ Update model information labels. """
 
@@ -191,23 +192,65 @@ class View(BaseView):
         self.controller = Controller(self)
 
 
-class Controller:
+class LoaderWorker(QThread):
+
+    load_success = pyqtSignal()
+    load_fail = pyqtSignal()
+
+    def __init__(self, cfg: LLMConfig) -> None:
+        super().__init__()
+        self._cfg = cfg
+
+    def _log_repr(self) -> str:
+        return f"<fg.blue>[Thrd#{int(self.currentThreadId())}] LOADER:</>"
+
+    def run(self) -> None:
+        log.debug(f"{self._log_repr()} Started.")
+
+        try:
+            _start = perf_counter()
+            shared.model = LLM(self._cfg, LLMBackend.LLAMA_CPP)
+            _elapsed = perf_counter() - _start
+
+            log.info(f"{self._log_repr()} Model loaded successfully in <fg.lightcyan>{round(_elapsed,2)}s</> at <fg.darkgray>'{self._cfg.path}'</>")
+            self.load_success.emit()
+        
+        except ValueError as e:
+            log.error(f"{self._log_repr()} Failed to load model at <fg.darkgray>'{self._cfg.path}'</>. Exception:\n{e}")
+            self.load_fail.emit()
+
+        log.debug(f"{self._log_repr()} Finished.")
+
+
+class Controller(QObject):
     """
     Models user interface controller.
     """
 
     def __init__(self, view: View) -> None:
+        super().__init__()
         self.view = view
 
         self.view.model_panel.browse_btn.clicked.connect(self.browse_models)
         self.view.model_panel.load_btn.clicked.connect(self.load_current_model)
-        self.view.model_panel.unload_btn.clicked.connect(self.unload_model)
+        self.view.model_panel.unload_btn.clicked.connect(self._unload_model)
 
         shared.settings.changed.connect(self._settings_changed)
+
+        self._worker: LoaderWorker | None = None
 
     def _settings_changed(self, changed: SettingsDict) -> None:
         if "model_path" in changed and changed["model_path"] is not None:
             self.load_model(changed["model_path"])
+            self.view.model_panel.load_input.setText(changed["model_path"])
+
+    @pyqtSlot()
+    def _worker_cleanup(self) -> None:
+        if self._worker is not None:
+            self._worker.deleteLater()
+            self._worker = None
+        
+        self.view.model_panel.update_model_info()
 
     def browse_models(self) -> None:
         """ Browse filesytem for models. """
@@ -232,6 +275,7 @@ class Controller:
             Path to try load the model from
         """
         
+        # FIXME
         # if not path or not (os.path.exists(path) and os.path.isdir(path) and os.listdir(path)):
         #     log.debug(f"<fg.yellow>'{path}'</> is not a valid directory.")
         #     return
@@ -239,17 +283,14 @@ class Controller:
         # Unload the previously loaded model
         self.unload_model()
         
-        cfg = LLMConfig(path, 32 * 320, verbose=False)
-        try:
-            _start = perf_counter()
-            shared.model = LLM(cfg, LLMBackend.LLAMA_CPP)
-            _elapsed = perf_counter() - _start
-            log.info(f"Model loaded successfully in <fg.lightcyan>{round(_elapsed,2)}s</> at <fg.darkgray>'{path}'</>")
+        shared.toasts.info("Loading model...")
 
-        except Exception as e:
-            log.error(f"Failed to load model at <fg.darkgray>'{path}'</>. Exception:\n{e}")
-
-        self.view.model_panel.update_model_info()
+        cfg = LLMConfig(path=path, context=32 * 320, verbose=True)
+        self._worker = LoaderWorker(cfg)
+        self._worker.finished.connect(self._worker_cleanup)
+        self._worker.load_success.connect(lambda: shared.toasts.success("Model loaded."))
+        self._worker.load_fail.connect(lambda: shared.toasts.error("Failed to load model."))
+        self._worker.start()
 
     def load_current_model(self) -> None:
         """ Load the current model given in search interface. """
@@ -257,15 +298,18 @@ class Controller:
         path = self.view.model_panel.load_input.text()
         shared.settings["model_path"] = path
 
+    def _unload_model(self) -> None:
+        shared.settings["model_path"] = None
+        self.unload_model()
+
     def unload_model(self) -> None:
         """ Unload the current model. """
 
-        if shared.model is not None:
+        if shared.model is not None and shared.model.backend != LLMBackend.DUMMY:
             shared.model.release()
+            shared.toasts.success("Model unloaded.")
 
         shared.model = LLM(LLMConfig(""), LLMBackend.DUMMY)
-
-        shared.settings["model_path"] = None
 
         self.view.model_panel.update_model_info()
 

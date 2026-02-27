@@ -28,6 +28,7 @@ from llm_qlient.core.content import load_content
 from llm_qlient.core.models import Conversation, UserPersona
 from llm_qlient.core.generator import Generator
 from llm_qlient.ui.main_window import MainWindow
+from llm_qlient.ui.widgets.toast import ToastManager
 
 from freshqt.palettes.catppuccin import UI_CATPPUCCIN_MOCHA, UI_CATPPUCCIN_LATTE, UI_CATPPUCCIN_FRAPPE
 from freshqt.palettes.dracula import UI_DRACULA, UI_ALUCARD
@@ -87,6 +88,8 @@ class App:
         self.mainwindow = MainWindow()
         shared.theme.add_widget(self.mainwindow)
         self.mainwindow.hide()
+
+        shared.toasts = ToastManager(self.mainwindow)
 
         shared.cleanup.connect(self.cleanup)
 

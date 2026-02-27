@@ -110,17 +110,26 @@ class Settings(QObject):
         self.__default = default
         self.__user = load_settings()
         self.__front = merge_settings(self.__default, self.__user)[1]
+        # Waiting to be emitted
+        self.__changed = {}
 
     def _update(self, front: bool = False) -> None:
-        """ Update front & emit. """
+        """ Update and emit changes. """
         changed, self.__front = merge_settings(self.__default, self.__user)
-        emit = self.__front if front else changed
+        emit = self.__front if front else self.__changed
         self.changed.emit(emit)
+
+        if not front:
+            for key in changed:
+                if key in self.__changed:
+                    self.__changed.pop(key)
 
     def __getitem__(self, key: str) -> Any:
         return self.__front[key]
     
     def __setitem__(self, key: str, value: Any) -> None:
+        log.debug(f"<fg.green>[SETTING]</> Set <fg.yellow>{key}</>=<fg.yellow>{value}</>")
         self.__user[key] = value
+        self.__changed[key] = value
         save_settings(self.__user)
         self._update()

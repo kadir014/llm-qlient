@@ -14,6 +14,7 @@ from typing import Iterator
 
 from pathlib import Path
 from functools import partial
+from datetime import datetime
 
 from PyQt6.QtCore import Qt, QSize, QObject, pyqtSlot
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QLineEdit, QScrollArea, QPlainTextEdit, QSpacerItem, QBoxLayout
@@ -247,6 +248,21 @@ class ConversationBubble(QWidget, Themeable):
 
         self.__content_wdgs: list[QWidget] = []
 
+        footer_lyt = QHBoxLayout()
+        footer_lyt.setContentsMargins(0, 0, 0, 0)
+        footer_lyt.setSpacing(5)
+        layout.addLayout(footer_lyt)
+
+        self.footer_avatar = Avatar()
+        shared.theme.add_widget(self.footer_avatar)
+        footer_lyt.addWidget(self.footer_avatar)
+        self.footer_avatar.setFixedSize(16, 16)
+
+        dt = datetime.fromtimestamp(convo_msg.timestamp)
+        self.footer_text = TypoLabel(f"Sent by {name} at {dt.strftime('%H:%M:%S')}", type=TypographyType.CAPTION)
+        shared.theme.add_widget(self.footer_text)
+        footer_lyt.addWidget(self.footer_text)
+
     @property
     def content(self) -> list[TypoLabel | Code]:
         """ Reference list to conversation bubble's content. """
@@ -255,6 +271,8 @@ class ConversationBubble(QWidget, Themeable):
     def update_theme(self, theme: Theme) -> None:
         palette = SYNTAX_CATPPUCCIN_MOCHA if theme.palette.is_dark else SYNTAX_CATPPUCCIN_LATTE
 
+        self.footer_text.color = theme.qcolor(theme.palette.text_tertiary)
+
         for wdg in self.__content_wdgs:
             if isinstance(wdg, Code):
                 wdg.syntax_palette = palette
@@ -262,6 +280,8 @@ class ConversationBubble(QWidget, Themeable):
     def theme_removed(self) -> None:
         shared.theme.remove_widget(self.avatar, update=False)
         shared.theme.remove_widget(self.name_lbl, update=False)
+        shared.theme.remove_widget(self.footer_avatar, update=False)
+        shared.theme.remove_widget(self.footer_text, update=False)
 
         recursive_clear(self.layout())
         
@@ -570,6 +590,8 @@ class ConversationView(QWidget):
 
             for convo_msg in convo.messages:
                 self.add_bubble(convo_msg, convo.character)
+
+            shared.theme.update_last_widgets()
 
             log.info(f"Loaded conversation <fg.yellow>{convo.character.name}</> (index <fg.lightcyan>{shared.current_convo_idx}</>)")
 

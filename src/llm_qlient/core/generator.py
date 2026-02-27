@@ -14,7 +14,7 @@ import queue
 
 from PyQt6.QtCore import QThread, pyqtSignal, pyqtSlot
 
-from panllm import GenerationConfig, ChatChunk
+from panllm import GenerationConfig, ChatChunk, LLMBackend
 
 from llm_qlient import shared
 from llm_qlient.core import log
@@ -87,13 +87,18 @@ class Generator(QThread):
             )
 
             # FIXME
-            #shared.model._llm.reset()
+            if shared.model is not None and shared.model.backend != LLMBackend.DUMMY:
+                shared.model._llama.reset()
 
             # Flatten conversation messages into what chat formatter expects
             messages = [
                 {"role": msg.role.name.lower(), "content": msg.content}
                 for msg in request.convo.messages
             ]
+
+            # Adjust sent messages for models that enforce role order
+            if request.mode == "retry" and messages[-1]["role"] == "assistant":
+                messages = messages[:-1]
 
             stream = shared.model.stream_chat(
                 messages,
@@ -108,7 +113,7 @@ class Generator(QThread):
                 # This might be altered mid-generation
                 if not self._is_generating:
                     break
-
+            print("full_content:", full_content)
             full_chunk = ChatChunk(chunk.role, full_content)
 
             log.debug(

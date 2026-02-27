@@ -14,6 +14,7 @@ from freshqt.core import Theme
 from panllm.backends.base import BaseLLM
 
 from llm_qlient.ui.icon_manager import IconManager
+from llm_qlient.ui.widgets.toast import ToastManager
 from llm_qlient.core.broadcast import Broadcast
 from llm_qlient.core.settings import Settings
 from llm_qlient.core.models import Conversation, UserPersona, Character
@@ -46,7 +47,10 @@ theme = Theme()
 icons = IconManager()
 theme.icons = icons
 
+toasts: ToastManager | None = None
+
 cleanup = Broadcast()
+window_resize = Broadcast()
 
 
 ################################################################################
