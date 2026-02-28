@@ -78,7 +78,7 @@ class App:
 
         shared.settings.changed.connect(self._settings_changed)
 
-        self._load_content()
+        shared.contents.load_all()
 
         shared.model = LLM(LLMConfig(""), LLMBackend.DUMMY)
 
@@ -109,29 +109,6 @@ class App:
         new_msg = f"<fg.green>[Qt]</> {msg}"
 
         log.log(level_map[type_], new_msg)
-
-    def _load_content(self) -> None:
-        ROOT = Path.cwd()
-
-        convos_json = load_content(
-            ROOT / "data" / "content" / "conversations.json",
-            ROOT / "data" / "content" / "conversations.json.template"
-        )
-
-        for convo in convos_json:
-            shared.convos.append(Conversation.deserialize(convo))
-
-        log.info(f"Loaded <fg.lightcyan>{len(shared.convos)}</> conversations successfully.")
-
-        personas_json = load_content(
-            ROOT / "data" / "content" / "user_personas.json",
-            ROOT / "data" / "content" / "user_personas.json.template"
-        )
-
-        for persona in personas_json:
-            shared.personas.append(UserPersona.deserialize(persona))
-
-        log.info(f"Loaded <fg.lightcyan>{len(shared.personas)}</> user personas successfully.")
 
     def _settings_changed(self, changed: SettingsDict) -> None:
         if "theme" in changed:

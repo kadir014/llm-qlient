@@ -5,6 +5,6 @@
         "avatar": "",
         "system-prompt": "You are an intelligent and helpful AI assistant. Your name is {character} and user's name is {user}.",
         "personality": "",
-        "opening-message": "",
+        "opening-message": null,
     }
 }

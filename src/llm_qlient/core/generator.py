@@ -106,15 +106,24 @@ class Generator(QThread):
             )
 
             full_content = ""
+            last_chunk: ChatChunk | None = None
             for chunk in stream:
+                last_chunk = chunk
+
                 full_content += chunk.content
                 self.new_chat_chunk.emit(request.mode, chunk)
 
                 # This might be altered mid-generation
                 if not self._is_generating:
                     break
-            print("full_content:", full_content)
-            full_chunk = ChatChunk(chunk.role, full_content)
+
+            if last_chunk is None:
+                log.error(f"{self._log_repr()} Stream was empty, so assistant role is assumed.")
+                full_chunk = ChatChunk("assistant", full_content)
+            
+            else:
+                # Every chunk will carry the role, so we can just use the last chunk
+                full_chunk = ChatChunk(last_chunk.role, full_content)
 
             log.debug(
                 f"{self._log_repr()} Generation finished:\n"

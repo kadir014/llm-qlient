@@ -727,6 +727,8 @@ class ConversationController(QObject):
 
         self.view.input_composer.set_buttons_state(False)
 
+        shared.contents.save_conversations()
+
     @pyqtSlot(str, ChatChunk)
     def _new_chat_chunk(self, mode: str, chunk: ChatChunk) -> None:
         # This should never happen, but let's not ignore it

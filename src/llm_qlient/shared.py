@@ -19,6 +19,7 @@ from llm_qlient.core.broadcast import Broadcast
 from llm_qlient.core.settings import Settings
 from llm_qlient.core.models import Conversation, UserPersona, Character
 from llm_qlient.core.generator import Generator
+from llm_qlient.core.content import ContentManager
 
 
 ################################################################################
@@ -28,7 +29,7 @@ from llm_qlient.core.generator import Generator
 ################################################################################
 
 # LLM Qlient version
-__version__ = "0.0.1"
+__version__ = "0.0.1-alpha"
 
 from PyQt6.QtCore import QT_VERSION_STR as __qt_version__
 from PyQt6.QtCore import PYQT_VERSION_STR as __pyqt_version__
@@ -48,6 +49,8 @@ icons = IconManager()
 theme.icons = icons
 
 toasts: ToastManager | None = None
+
+contents = ContentManager()
 
 cleanup = Broadcast()
 window_resize = Broadcast()
