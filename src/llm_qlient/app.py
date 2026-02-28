@@ -47,7 +47,7 @@ class App:
 
         ROOT = Path.cwd()
 
-        self.qapp = QApplication([])
+        shared.qapp = QApplication([])
 
         # TODO: better path for data fonts icons etc
 
@@ -64,9 +64,9 @@ class App:
         if platform.system() == "Windows":
             # https://stackoverflow.com/a/67219364
             # PreferNoHinting solves fonts looking weird on Windows
-            font = self.qapp.font()
+            font = shared.qapp.font()
             font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
-            self.qapp.setFont(font)
+            shared.qapp.setFont(font)
 
         # SVG icons have to be loaded before any raster icons so Qt can select proper icon engine
         for icon_path in HEROICONS.keys():
@@ -150,4 +150,4 @@ class App:
         # changes can initialize themselves
         shared.settings._update(front=True)
 
-        return self.qapp.exec()
+        return shared.qapp.exec()

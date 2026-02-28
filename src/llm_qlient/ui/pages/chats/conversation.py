@@ -211,11 +211,9 @@ class ConversationBubble(QWidget, Themeable):
         self._convo_msg = convo_msg
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(16)
         self.setLayout(layout)
-
-        #self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
 
         title_lyt = QHBoxLayout()
         title_lyt.setContentsMargins(0, 0, 0, 0)
@@ -246,27 +244,110 @@ class ConversationBubble(QWidget, Themeable):
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         layout.addLayout(self.content_lyt)
 
+        self.__edit_mode = False
+
+        self.editor = QPlainTextEdit()
+        self.editor.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.editor.hide()
+        self.editor.setObjectName("msg_editor")
+        self.content_lyt.addWidget(self.editor)
+
         self.__content_wdgs: list[QWidget] = []
 
-        footer_lyt = QHBoxLayout()
-        footer_lyt.setContentsMargins(0, 0, 0, 0)
-        footer_lyt.setSpacing(5)
-        layout.addLayout(footer_lyt)
+        self.footer_lyt = QHBoxLayout()
+        self.footer_lyt.setContentsMargins(0, 0, 0, 0)
+        self.footer_lyt.setSpacing(5)
+        layout.addLayout(self.footer_lyt)
 
         self.footer_avatar = Avatar()
         shared.theme.add_widget(self.footer_avatar)
-        footer_lyt.addWidget(self.footer_avatar)
         self.footer_avatar.setFixedSize(16, 16)
 
         dt = datetime.fromtimestamp(convo_msg.timestamp)
-        self.footer_text = TypoLabel(f"Sent by {name} at {dt.strftime('%H:%M:%S')}", type=TypographyType.CAPTION)
+        self.footer_text = TypoLabel(f"Sent by {name} at {dt.strftime('%H:%M')}", type=TypographyType.CAPTION)
         shared.theme.add_widget(self.footer_text)
-        footer_lyt.addWidget(self.footer_text)
+
+        self.footer_edit_btn = Button(icon_name="hi-pencil", variant=Button.Variant.GHOST)
+        shared.theme.add_widget(self.footer_edit_btn)
+        self.footer_edit_btn.border_radius = -1
+        self.footer_edit_btn.setIconSize(QSize(18, 18))
+        self.footer_edit_btn.setFixedSize(26, 26)
+        self.footer_edit_btn.clicked.connect(self.toggle_edit_mode)
+
+        self.footer_copy_btn = Button(icon_name="hi-square-2-stack", variant=Button.Variant.GHOST)
+        shared.theme.add_widget(self.footer_copy_btn)
+        self.footer_copy_btn.border_radius = -1
+        self.footer_copy_btn.setIconSize(QSize(18, 18))
+        self.footer_copy_btn.setFixedSize(26, 26)
+        self.footer_copy_btn.clicked.connect(self.copy)
+
+        if rtl:
+            self.footer_lyt.addWidget(self.footer_copy_btn)
+            self.footer_lyt.addWidget(self.footer_edit_btn)
+            self.footer_lyt.addWidget(self.footer_text, alignment=Qt.AlignmentFlag.AlignRight)
+            self.footer_lyt.addWidget(self.footer_avatar)
+        else:
+            self.footer_lyt.addWidget(self.footer_avatar)
+            self.footer_lyt.addWidget(self.footer_text)
+            self.footer_lyt.addWidget(self.footer_copy_btn, alignment=Qt.AlignmentFlag.AlignRight)
+            self.footer_lyt.addWidget(self.footer_edit_btn)
 
     @property
     def content(self) -> list[TypoLabel | Code]:
         """ Reference list to conversation bubble's content. """
         return self.__content_wdgs.copy()
+    
+    @property
+    def edit_mode(self) -> bool:
+        """ Message editing mode. """
+        return self.__edit_mode
+    
+    @edit_mode.setter
+    def edit_mode(self, mode: bool) -> None:
+        if mode == self.__edit_mode:
+            return
+        
+        self.__edit_mode = mode
+        self._sync_content()
+
+        if mode:
+            self.editor.show()
+            for widget in self.__content_wdgs:
+                widget.hide()
+            
+            self.footer_edit_btn.icon_name = "hi-check"
+        
+        else:
+            self.editor.hide()
+            for widget in self.__content_wdgs:
+                widget.show()
+
+                self.footer_edit_btn.icon_name = "hi-pencil"
+
+    def toggle_edit_mode(self) -> None:
+        """ Toggle enable or disable message editing mode. """
+        self.edit_mode = not self.edit_mode
+
+    def _sync_content(self) -> None:
+        """
+        Sync content between message editor and content widgets.
+
+        This is called when editing, you don't have a reason to use this manually.
+        """
+
+        if self.__edit_mode:
+            self.editor.setPlainText(self._convo_msg.content)
+
+        else:
+            new_content = self.editor.toPlainText()
+            self._convo_msg.content = new_content
+
+            self.clear_content()
+            self.add_content(self._convo_msg.content)
+            self.set_word_wrapping(True)
+            
+            shared.contents.save_conversations()
+            shared.toasts.success("Message edited.")
 
     def update_theme(self, theme: Theme) -> None:
         palette = SYNTAX_CATPPUCCIN_MOCHA if theme.palette.is_dark else SYNTAX_CATPPUCCIN_LATTE
@@ -277,11 +358,30 @@ class ConversationBubble(QWidget, Themeable):
             if isinstance(wdg, Code):
                 wdg.syntax_palette = palette
 
+        font_size = int(round(theme.get_typo_size(TypographyType.BODY) * theme.font_scale))
+        if font_size <= 0:
+            font_size = 1
+
+        self.setStyleSheet(f"""
+            QPlainTextEdit#msg_editor {{
+                font-family: {theme.font_family};
+                font-size: {font_size}px;
+                color: {theme.qss(theme.palette.text_primary)};
+                background-color: {theme.qss(theme.palette.background_secondary)};
+                border: 1px solid {theme.qss(theme.palette.text_tertiary)};
+                border-radius: 10px;
+                selection-background-color: {theme.qss(theme.palette.text_selection)};
+            }}
+        """)
+
     def theme_removed(self) -> None:
         shared.theme.remove_widget(self.avatar, update=False)
         shared.theme.remove_widget(self.name_lbl, update=False)
         shared.theme.remove_widget(self.footer_avatar, update=False)
         shared.theme.remove_widget(self.footer_text, update=False)
+        shared.theme.remove_widget(self.footer_edit_btn, update=False)
+        shared.theme.remove_widget(self.footer_copy_btn, update=False)
+        shared.theme.remove_widget(self.editor, update=False)
 
         recursive_clear(self.layout())
         
@@ -289,6 +389,11 @@ class ConversationBubble(QWidget, Themeable):
             shared.theme.remove_widget(widget, update=False)
             widget.setParent(None)
         self.__content_wdgs = []
+
+    def copy(self) -> None:
+        """ Copy message bubble text content into clipboard. """
+        shared.toasts.success("Message copied.")
+        shared.qapp.clipboard().setText(self._convo_msg.content)
 
     def clear_content(self) -> None:
         """ Clear messabe bubble content. """
@@ -321,8 +426,14 @@ class ConversationBubble(QWidget, Themeable):
 
                 max_width = max(width, max_width)
 
+        # Make sure bubble title or footer doesn't collapse
         title_width = self.name_lbl.sizeHint().width() + self.avatar.width() + 36
-        max_width = max(max_width, title_width)
+        footer_width = (
+            self.footer_avatar.width() + 
+            self.footer_copy_btn.width() + self.footer_edit_btn.width() + 
+            self.footer_text.sizeHint().width() + 40
+        )
+        max_width = max(max_width, max(title_width, footer_width))
 
         self.setFixedWidth(min(max_width, 880))
 
@@ -742,7 +853,11 @@ class ConversationController(QObject):
             self.stream_bubble.add_content("")
 
         # -1 so 'continue' mode can append to the latest content element
-        self.stream_bubble.content[-1].setText(self.stream_msg.content)
+        last_cnt = self.stream_bubble.content[-1]
+        # TODO: There is the small chance of last content widget being a Code editor
+        #       in that case, add a new label content and just keep appending
+        if isinstance(last_cnt, TypoLabel):
+            last_cnt.setText(self.stream_msg.content)
         self.stream_bubble.set_word_wrapping(True)
 
         self.view.content_scroller.ensureWidgetVisible(self.stream_bubble, yMargin=120)

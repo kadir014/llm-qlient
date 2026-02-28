@@ -10,6 +10,7 @@
 
 """
 
+from PyQt6.QtWidgets import QApplication
 from freshqt.core import Theme
 from panllm.backends.base import BaseLLM
 
@@ -42,6 +43,8 @@ from panllm import __version__ as __panllm_version__
 #                                 App Context                                  #
 #                                                                              #
 ################################################################################
+
+qapp: QApplication | None = None
 
 theme = Theme()
 
