@@ -14,14 +14,18 @@ import platform
 from pathlib import Path
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QLineEdit, QScrollArea, QFileDialog
-from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor
+from PyQt6.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QSizePolicy,
+    QScrollArea,
+    QFileDialog
+)
 from freshqt.core import TypographyType
-from freshqt.widgets import Button, Divider, TypoLabel, Switch, LineEdit, BadgeLabel
-from freshqt.animation import Tween, Easing
+from freshqt.widgets import Button, TypoLabel, Switch, LineEdit, BadgeLabel
 
 from llm_qlient import shared
-from llm_qlient.core import log
 from llm_qlient.ui.pages.base_view import BaseView
 from llm_qlient.ui.factories import *
 

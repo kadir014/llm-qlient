@@ -10,18 +10,15 @@
 
 """
 
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QSizePolicy, QHBoxLayout
-from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor
-from freshqt.core import TypographyType, Theme, Themeable
-from freshqt.widgets import Button, Divider, TypoLabel, Avatar
-from freshqt.animation import Tween, Easing
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QSizePolicy, QHBoxLayout
+from PyQt6.QtGui import QPainter
+from freshqt.core import Themeable
+from freshqt.widgets import Button, Avatar
 
 from llm_qlient import shared
-from llm_qlient.core import log
 from llm_qlient.ui.factories import *
-from llm_qlient.core.models import Conversation, Character
-from llm_qlient.ui.pages.base_view import BaseView
+from llm_qlient.core.models import Conversation
 
 
 class ChatHistoryEntry(QWidget):

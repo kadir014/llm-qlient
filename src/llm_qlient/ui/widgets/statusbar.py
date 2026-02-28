@@ -10,12 +10,10 @@
 
 """
 
-from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot, QTimer, QThread
+from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot, QThread
 from PyQt6.QtWidgets import QWidget, QHBoxLayout
-from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor
 from freshqt.core import TypographyType
-from freshqt.widgets import Button, Divider, TypoLabel
-from freshqt.animation import Tween, Easing
+from freshqt.widgets import TypoLabel
 
 from llm_qlient import shared
 from llm_qlient.core import log

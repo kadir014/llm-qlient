@@ -12,25 +12,37 @@
 
 from typing import Iterator
 
-from pathlib import Path
 from functools import partial
 from datetime import datetime
 
 from PyQt6.QtCore import Qt, QSize, QObject, pyqtSlot
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QLineEdit, QScrollArea, QPlainTextEdit, QSpacerItem, QBoxLayout
-from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor, QFontMetrics
+from PyQt6.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QSizePolicy,
+    QScrollArea,
+    QPlainTextEdit,
+    QBoxLayout
+)
+from PyQt6.QtGui import QPainter, QPainterPath, QFontMetrics
 from freshqt.core import TypographyType, Theme, Themeable, SyntaxLanguage
-from freshqt.core import __version__ as __freshqt_version__
-from freshqt.widgets import Button, Divider, TypoLabel, Switch, LineEdit, BadgeLabel, Avatar, Code
-from freshqt.animation import Tween, Easing
-from freshqt.palettes.catppuccin import SYNTAX_CATPPUCCIN_MOCHA, SYNTAX_CATPPUCCIN_LATTE
-from panllm import __version__ as __panllm_version__
+from freshqt.widgets import Button, TypoLabel, Avatar, Code
+from freshqt.palettes.catppuccin import (
+    SYNTAX_CATPPUCCIN_MOCHA,
+    SYNTAX_CATPPUCCIN_LATTE
+)
 from panllm import ChatChunk
 
 from llm_qlient import shared
 from llm_qlient.core import log
-from llm_qlient.core.models import Conversation, ConversationMessage, ConversationRole, Character, GenerationRequest
-from llm_qlient.core.content import load_content, save_content
+from llm_qlient.core.models import (
+    Conversation,
+    ConversationMessage,
+    ConversationRole,
+    Character,
+    GenerationRequest
+)
 from llm_qlient.ui.pages.chats.chat_history import ChatHistory
 
 
@@ -421,7 +433,7 @@ class ConversationBubble(QWidget, Themeable):
 
                 fm = QFontMetrics(wdg.font())
                 # To prevent unnecessary wrapping
-                padding = 30
+                padding = 34
                 width = fm.boundingRect(wdg.text()).width() + padding
 
                 max_width = max(width, max_width)

@@ -12,7 +12,7 @@
 
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtWidgets import QWidget, QVBoxLayout
-from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor
+from PyQt6.QtGui import QIcon, QPainter, QPainterPath
 from freshqt.core import TypographyType
 from freshqt.widgets import Button, Divider
 from freshqt.animation import Tween, Easing

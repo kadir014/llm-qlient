@@ -16,7 +16,6 @@ from functools import partial
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QSizePolicy
-from PyQt6.QtGui import QColor
 from freshqt.core import Theme, Themeable, change_titlebar_theme
 from freshqt.widgets import Divider, Button
 
@@ -25,7 +24,6 @@ from llm_qlient.core import log
 from llm_qlient.core.models import Page
 from llm_qlient.ui.widgets.sidebar import SideBar
 from llm_qlient.ui.widgets.statusbar import StatusBar
-from llm_qlient.ui.widgets.toast import ToastManager
 
 
 class MainWindow(QWidget, Themeable):

@@ -15,11 +15,17 @@ from pathlib import Path
 from time import perf_counter
 
 from PyQt6.QtCore import Qt, QObject, QSize, QThread, pyqtSlot, pyqtSignal
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QLineEdit, QScrollArea, QLayout, QFileDialog
-from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor
-from freshqt.core import TypographyType, Theme, Themeable
-from freshqt.widgets import Button, Divider, TypoLabel, Switch, LineEdit, BadgeLabel
-from freshqt.animation import Tween, Easing
+from PyQt6.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QSizePolicy,
+    QScrollArea,
+    QFileDialog
+)
+from PyQt6.QtGui import QPainter, QPainterPath
+from freshqt.core import Themeable
+from freshqt.widgets import Button, LineEdit
 from panllm import LLM, LLMConfig, LLMBackend
 
 from llm_qlient import shared

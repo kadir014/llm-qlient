@@ -17,20 +17,22 @@ from pathlib import Path
 
 from PyQt6.QtCore import qInstallMessageHandler, QtMsgType, QMessageLogContext
 from PyQt6.QtWidgets import QApplication
-from PyQt6.QtGui import QFont, QFontDatabase, QIcon
+from PyQt6.QtGui import QFont, QFontDatabase
 from freshqt.assets import HEROICONS
 from panllm import LLM, LLMBackend, LLMConfig
 
 from llm_qlient import shared
 from llm_qlient.core import log
 from llm_qlient.core.types import SettingsDict
-from llm_qlient.core.content import load_content
-from llm_qlient.core.models import Conversation, UserPersona
 from llm_qlient.core.generator import Generator
 from llm_qlient.ui.main_window import MainWindow
 from llm_qlient.ui.widgets.toast import ToastManager
 
-from freshqt.palettes.catppuccin import UI_CATPPUCCIN_MOCHA, UI_CATPPUCCIN_LATTE, UI_CATPPUCCIN_FRAPPE
+from freshqt.palettes.catppuccin import (
+    UI_CATPPUCCIN_MOCHA,
+    UI_CATPPUCCIN_LATTE,
+    UI_CATPPUCCIN_FRAPPE
+)
 from freshqt.palettes.dracula import UI_DRACULA, UI_ALUCARD
 
 
