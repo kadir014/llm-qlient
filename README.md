@@ -15,6 +15,12 @@
 Qt-based lightweight desktop client for interacting with local Large Language Models.
 </p>
 
+<br>
+
+<p align="center">
+  <img src="data/gh/showcase_1920.png" width=800>
+</p>
+
 
 
 # Features
