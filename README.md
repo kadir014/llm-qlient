@@ -9,8 +9,7 @@
   <a href="https://app.codacy.com/gh/kadir014/llm-qlient/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade"><img src="https://app.codacy.com/project/badge/Grade/4086611b2f194cebaeffbfeece78d2e1"/></a>
   <img src="https://img.shields.io/badge/version-0.0.1--alpha-yellow">
   <img src="https://img.shields.io/github/downloads/kadir014/llm-qlient/total">
-  <img src="https://img.shields.io/github/issues-pr/kadir014/llm-qlient
-  ">
+  <a href="https://github.com/kadir014/llm-qlient/issues"><img src="https://img.shields.io/github/issues/kadir014/llm-qlient"></a>
 </p>
 <p align="center">
 Qt-based lightweight desktop client for interacting with local Large Language Models.
