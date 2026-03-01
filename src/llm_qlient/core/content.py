@@ -115,7 +115,6 @@ class ContentManager:
             for persona in personas_json:
                 shared.personas.append(UserPersona.deserialize(persona))
 
-        s = f"{round(self._prof['load'].last * 1000.0, 3)}ms"
         log.info(f"Loaded <fg.lightcyan>{len(shared.personas)}</> user personas in {log.t(self._prof['load'].last)}.")
 
     def save_user_personas(self) -> None:

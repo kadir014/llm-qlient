@@ -723,7 +723,7 @@ class ConversationView(QWidget):
         else:
             self.toggle_disclaimer_state(True)
 
-            log.info(f"No conversation to load.")
+            log.info("No conversation to load.")
 
         # TODO: I need to investigate this, if I don't repaint after clearing up
         #       the content, some stuff remains

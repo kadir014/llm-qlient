@@ -171,7 +171,7 @@ class View(BaseView):
         content_scroller.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         outer_layout.addWidget(content_scroller)
 
-        content_scroller.setStyleSheet(f"""
+        content_scroller.setStyleSheet("""
             background: transparent;
             border: none;
         """)
@@ -323,4 +323,4 @@ class Controller(QObject):
 
         self.view.model_panel.update_model_info()
 
-        log.debug(f"Model unloaded & panel updated.")
+        log.debug("Model unloaded & panel updated.")

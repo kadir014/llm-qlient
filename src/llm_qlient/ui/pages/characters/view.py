@@ -12,10 +12,8 @@
 
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QSizePolicy, QHBoxLayout
-from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor, QPixmap
-from freshqt.core import TypographyType, Theme, Themeable
-from freshqt.widgets import Button, Divider, TypoLabel, Avatar
-from freshqt.animation import Tween, Easing
+from PyQt6.QtGui import QPainter, QPainterPath, QPixmap
+from freshqt.widgets import Button, Avatar
 
 from llm_qlient import shared
 from llm_qlient.core import log
