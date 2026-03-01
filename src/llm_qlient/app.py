@@ -87,11 +87,11 @@ class App:
         shared.gen = Generator()
         shared.gen.start()
 
-        self.mainwindow = MainWindow()
-        shared.theme.add_widget(self.mainwindow)
-        self.mainwindow.hide()
+        shared.main_window = MainWindow()
+        shared.theme.add_widget(shared.main_window)
+        shared.main_window.hide()
 
-        shared.toasts = ToastManager(self.mainwindow)
+        shared.toasts = ToastManager(shared.main_window)
 
         shared.cleanup.connect(self.cleanup)
 
@@ -141,12 +141,12 @@ class App:
             shared.model.release()
 
     def run(self) -> int:
-        self.mainwindow.show()
+        shared.main_window.show()
 
-        # After the mainwindow is shown, all the layouts will be settled
+        # After the main window is shown, all the layouts will be settled
         # So this is the time to set the inital page displayed
         # otherwise certain animations will not work
-        self.mainwindow.change_page(self.mainwindow.pages[0].id)
+        shared.main_window.change_page(shared.main_window.pages[0].id)
 
         # Emit settings signal once so all widgets listening to setting
         # changes can initialize themselves

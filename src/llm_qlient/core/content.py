@@ -19,7 +19,7 @@ import miniprofiler
 from llm_qlient import shared
 from llm_qlient.core import log
 from llm_qlient.core.types import JSONContent
-from llm_qlient.core.models import Conversation, UserPersona
+from llm_qlient.core.models import Conversation, UserPersona, Character
 
 
 def ensure_content(path: Path, template: Path) -> None:
@@ -74,44 +74,6 @@ def save_content(path: Path, content: JSONContent) -> None:
         file.write(json.dumps(content))
 
 
-def t(dt: float) -> str:
-    """
-    Format delta time for logging.
-
-    TODO: Better name? Also move to another module.
-
-    Parameters
-    ----------
-    dt
-        Elapsed time in seconds
-    """
-
-    dt = float(dt)
-    unit = "s"
-
-    # Minutes
-    if dt >= 3600.0:
-        dt /= 3600.0
-        unit = "h"
-
-    elif dt >= 60.0:
-        dt /= 60.0
-        unit = "m"
-
-    else:
-        # Milliseconds
-        if dt <= 1.0:
-            dt *= 1000.0
-            unit = "ms"
-
-        # Microseconds
-        if dt <= 1.0:
-            dt *= 1000.0
-            unit = "us"
-
-    return f"<fg.lightcyan>{round(dt, 4)}{unit}</>"
-
-
 class ContentManager:
     """
     JSON Content manager.
@@ -132,7 +94,7 @@ class ContentManager:
             for convo in convos_json:
                 shared.convos.append(Conversation.deserialize(convo))
 
-        log.info(f"Loaded <fg.lightcyan>{len(shared.convos)}</> conversations in {t(self._prof['load'].last)}.")
+        log.info(f"Loaded <fg.lightcyan>{len(shared.convos)}</> conversations in {log.t(self._prof['load'].last)}.")
 
     def save_conversations(self) -> None:
         with self._prof.profile("save"):
@@ -141,7 +103,7 @@ class ContentManager:
                 [convo.serialize() for convo in shared.convos]
             )
 
-        log.info(f"Saved <fg.lightcyan>{len(shared.convos)}</> conversations in {t(self._prof['save'].last)}.")
+        log.info(f"Saved <fg.lightcyan>{len(shared.convos)}</> conversations in {log.t(self._prof['save'].last)}.")
 
     def load_user_personas(self) -> None:
         with self._prof.profile("load"):
@@ -154,7 +116,7 @@ class ContentManager:
                 shared.personas.append(UserPersona.deserialize(persona))
 
         s = f"{round(self._prof['load'].last * 1000.0, 3)}ms"
-        log.info(f"Loaded <fg.lightcyan>{len(shared.personas)}</> user personas in {t(self._prof['load'].last)}.")
+        log.info(f"Loaded <fg.lightcyan>{len(shared.personas)}</> user personas in {log.t(self._prof['load'].last)}.")
 
     def save_user_personas(self) -> None:
         with self._prof.profile("save"):
@@ -163,12 +125,35 @@ class ContentManager:
                 [persona.serialize() for persona in shared.personas]
             )
 
-        log.info(f"Loaded <fg.lightcyan>{len(shared.convos)}</> user personas in {t(self._prof['save'].last)}.")
+        log.info(f"Loaded <fg.lightcyan>{len(shared.convos)}</> user personas in {log.t(self._prof['save'].last)}.")
+
+    def load_characters(self) -> None:
+        with self._prof.profile("load"):
+            chars_json = load_content(
+                self.root / "data" / "content" / "characters.json",
+                self.root / "data" / "content" / "characters.json.template"
+            )
+
+            for char in chars_json:
+                shared.characters.append(Character.deserialize(char))
+
+        log.info(f"Loaded <fg.lightcyan>{len(shared.convos)}</> characters in {log.t(self._prof['load'].last)}.")
+
+    def save_characters(self) -> None:
+        with self._prof.profile("save"):
+            save_content(
+                self.root / "data" / "content" / "characters.json",
+                [char.serialize() for char in shared.characters]
+            )
+
+        log.info(f"Saved <fg.lightcyan>{len(shared.convos)}</> characters in {log.t(self._prof['save'].last)}.")
 
     def load_all(self) -> None:
-        self.load_conversations()
         self.load_user_personas()
+        self.load_characters()
+        self.load_conversations()
 
     def save_all(self) -> None:
-        self.save_conversations()
         self.save_user_personas()
+        self.save_characters()
+        self.save_conversations()

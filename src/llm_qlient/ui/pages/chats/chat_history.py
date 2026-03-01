@@ -36,7 +36,7 @@ class ChatHistoryEntry(QWidget):
         shared.theme.add_widget(self.avatar)
         layout.addWidget(self.avatar)
 
-        title = convo.character.name
+        title = convo.character.ui_name
 
         self.button = Button(title, variant=Button.Variant.GHOST)
         self.button.setContentsMargins(5, 5, 5, 5)

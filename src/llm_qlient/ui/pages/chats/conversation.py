@@ -629,7 +629,7 @@ class ConversationView(QWidget):
         if rtl:
             name = shared.personas[shared.current_persona_idx].name
         else:
-            name = character.name
+            name = character.ui_name
 
         c = ConversationBubble(self, convo_msg, name, rtl=rtl)
         shared.theme.add_widget(c)
@@ -716,7 +716,18 @@ class ConversationView(QWidget):
 
             shared.theme.update_last_widgets()
 
-            log.info(f"Loaded conversation <fg.yellow>{convo.character.name}</> (index <fg.lightcyan>{shared.current_convo_idx}</>)")
+            self.toggle_disclaimer_state(False)
+
+            log.info(f"Loaded conversation <fg.yellow>{convo.character.ui_name}</> (index <fg.lightcyan>{shared.current_convo_idx}</>)")
+
+        else:
+            self.toggle_disclaimer_state(True)
+
+            log.info(f"No conversation to load.")
+
+        # TODO: I need to investigate this, if I don't repaint after clearing up
+        #       the content, some stuff remains
+        self.repaint()
 
 
 class ConversationController(QObject):
@@ -749,6 +760,13 @@ class ConversationController(QObject):
         shared.gen.generation_started.connect(self._generation_started)
         shared.gen.generation_finished.connect(self._generation_finished)
         shared.gen.new_chat_chunk.connect(self._new_chat_chunk)
+
+    def _remove_ref(self) -> None:
+        """
+        Remove references to streaming widgets to they don't remain and get GC'd.
+        """
+        self.stream_bubble = None
+        self.stream_msg = None
 
     def send_new(self) -> None:
         """ Send current message to current conversation. """
@@ -809,8 +827,23 @@ class ConversationController(QObject):
         curr_convo = shared.convos[shared.current_convo_idx]
         shared.gen.start_gen(GenerationRequest(curr_convo, "continue"))
 
+    def new_conversation(self, character: Character) -> None:
+        """ Start new conversation with character and load it. """
+
+        convo = Conversation(character, [])
+        shared.convos.append(convo)
+        shared.contents.save_conversations()
+
+        entry = self.history.add_entry(convo)
+        entry.button.clicked.connect(partial(self._chat_history_entry_clicked, convo))
+
+        self.change_conversation_index(len(shared.convos) - 1)
+
     def change_conversation_index(self, convo_idx: int) -> None:
         """ Change current conversation index and load it. """
+        
+        self._remove_ref()
+
         shared.current_convo_idx = convo_idx
         self.view.load_conversation()
 
@@ -875,6 +908,8 @@ class ConversationController(QObject):
         self.view.content_scroller.ensureWidgetVisible(self.stream_bubble, yMargin=120)
 
     def _chat_history_entry_clicked(self, convo: Conversation) -> None:
+        self._remove_ref()
+
         for i, convo_ in enumerate(shared.convos):
             if convo_ is convo:
                 shared.current_convo_idx = i

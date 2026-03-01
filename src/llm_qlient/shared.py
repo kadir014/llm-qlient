@@ -10,6 +10,8 @@
 
 """
 
+from typing import TYPE_CHECKING
+
 from PyQt6.QtWidgets import QApplication
 from freshqt.core import Theme
 from panllm.backends.base import BaseLLM
@@ -21,6 +23,9 @@ from llm_qlient.core.settings import Settings
 from llm_qlient.core.models import Conversation, UserPersona, Character
 from llm_qlient.core.generator import Generator
 from llm_qlient.core.content import ContentManager
+
+if TYPE_CHECKING:
+    from llm_qlient.ui.main_window import MainWindow
 
 
 ################################################################################
@@ -45,6 +50,7 @@ from panllm import __version__ as __panllm_version__
 ################################################################################
 
 qapp: QApplication | None = None
+main_window: "MainWindow | None" = None
 
 theme = Theme()
 

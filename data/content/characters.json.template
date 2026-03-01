@@ -1,10 +1,10 @@
-{
-    "default_ai_assistant": {
-        "ui-name": "Default AI Assistant",
+[
+    {
+        "ui_name": "Default Assistant",
         "name": "Assistant",
-        "avatar": "",
-        "system-prompt": "You are an intelligent and helpful AI assistant. Your name is {character} and user's name is {user}.",
+        "avatar_path": "",
+        "system_prompt": "You are an intelligent and helpful AI assistant. Your name is {{character}} and user's name is {{user}}.",
         "personality": "",
-        "opening-message": null,
+        "opening_message": null
     }
-}
+]

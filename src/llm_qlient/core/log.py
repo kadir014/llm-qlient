@@ -288,6 +288,42 @@ def fatal(message: str) -> None:
 targets: set[LogTarget] = set()
 
 
+def t(dt: float) -> str:
+    """
+    Herlper function to ormat delta time for logging.
+
+    Parameters
+    ----------
+    dt
+        Elapsed time in seconds
+    """
+
+    dt = float(dt)
+    unit = "s"
+
+    # Minutes
+    if dt >= 3600.0:
+        dt /= 3600.0
+        unit = "h"
+
+    elif dt >= 60.0:
+        dt /= 60.0
+        unit = "m"
+
+    else:
+        # Milliseconds
+        if dt <= 1.0:
+            dt *= 1000.0
+            unit = "ms"
+
+        # Microseconds
+        if dt <= 1.0:
+            dt *= 1000.0
+            unit = "us"
+
+    return f"<fg.lightcyan>{round(dt, 4)}{unit}</>"
+
+
 __all__ = (
     "LogLevel",
     "LogTarget",
@@ -297,5 +333,6 @@ __all__ = (
     "warn",
     "error",
     "fatal",
-    "targets"
+    "targets",
+    "t"
 )
