@@ -17,9 +17,9 @@ classifiers = [
 dependencies = [
     "PyQt6>=6.10.0",
     "psutil>=7.2.2",
-    "miniprofiler>=0.0.2"
-    #"freshqt @ git+https://github.com/kadir014/freshqt",
-    #"panllm @ git+https://github.com/kadir014/panllm"
+    "miniprofiler>=0.0.2",
+    "freshqt @ git+https://github.com/kadir014/freshqt",
+    "panllm @ git+https://github.com/kadir014/panllm"
 ]
 requires-python = ">=3.12"
 
