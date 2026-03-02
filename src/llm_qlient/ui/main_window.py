@@ -24,6 +24,7 @@ from llm_qlient.core import log
 from llm_qlient.core.models import Page
 from llm_qlient.ui.widgets.sidebar import SideBar
 from llm_qlient.ui.widgets.statusbar import StatusBar
+from llm_qlient.ui.hotkey_manager import HotkeyManager
 
 
 class MainWindow(QWidget, Themeable):
@@ -38,6 +39,11 @@ class MainWindow(QWidget, Themeable):
         self.setWindowIcon(shared.icons.get("windowicon"))
         self.resize(1280, 720)
         self.setMinimumSize(640, 360)
+
+        # This needs to be created *after* main window is defined, but *before*
+        # all content is initialized so that they can listen to hotkeys.
+        shared.hotkeys = HotkeyManager(self)
+        shared.hotkeys.invoked.connect(self._hotkey_invoked)
 
         layout = QHBoxLayout()
         self.setLayout(layout)
@@ -97,6 +103,10 @@ class MainWindow(QWidget, Themeable):
         content_lyt.addWidget(self.statusbar)
 
         self.init_pages()
+
+    def _hotkey_invoked(self, action: str, key_seq: str) -> None:
+        if action == "quit":
+            self.close()
 
     def update_theme(self, theme: Theme) -> None:
         if platform.system() == "Windows":

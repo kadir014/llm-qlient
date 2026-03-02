@@ -18,6 +18,7 @@ from panllm.backends.base import BaseLLM
 
 from llm_qlient.ui.icon_manager import IconManager
 from llm_qlient.ui.widgets.toast import ToastManager
+from llm_qlient.ui.hotkey_manager import HotkeyManager
 from llm_qlient.core.broadcast import Broadcast
 from llm_qlient.core.settings import Settings
 from llm_qlient.core.models import Conversation, UserPersona, Character
@@ -51,6 +52,7 @@ from panllm import __version__ as __panllm_version__
 
 qapp: QApplication | None = None
 main_window: "MainWindow | None" = None
+hotkeys: HotkeyManager | None = None
 
 theme = Theme()
 

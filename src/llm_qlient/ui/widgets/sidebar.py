@@ -180,7 +180,7 @@ class SideBar(QWidget):
         # Update resizing animation
         self.setFixedWidth(round(self.__resize_tween.value + self.padding * 2))
 
-        for page, button in self.page_buttons.items():
+        for button in self.page_buttons.values():
             button.setFixedWidth(round(self.__resize_tween.value))
 
         if self.__resize_tween.is_started or self.__cursor_tween.is_started:
