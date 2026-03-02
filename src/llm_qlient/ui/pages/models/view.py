@@ -24,8 +24,8 @@ from PyQt6.QtWidgets import (
     QFileDialog
 )
 from PyQt6.QtGui import QPainter, QPainterPath
-from freshqt.core import Themeable
-from freshqt.widgets import Button, LineEdit
+from freshqt.core import Themeable, TypographyType
+from freshqt.widgets import Button, LineEdit, TypoLabel
 from panllm import LLM, LLMConfig, LLMBackend
 
 from llm_qlient import shared
@@ -33,6 +33,7 @@ from llm_qlient.core import log
 from llm_qlient.core.types import SettingsDict
 from llm_qlient.ui.pages.base_view import BaseView
 from llm_qlient.ui.factories import *
+from llm_qlient.ui.layout_utils import iter_widgets
 
 
 class ModelPanel(QWidget, Themeable):
@@ -143,10 +144,128 @@ class ModelConfiguration(QWidget):
     def __init__(self) -> None:
         super().__init__()
 
-        layout = QHBoxLayout()
+        layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
+        self._last_row: QHBoxLayout | None = None
+        self.new_row()
+
+        self.add_config_field(
+            "Generation Length",
+            "Maximum number of tokens the model can generate for one inference.",
+            "gen_length"
+        )
+
+        self.add_config_field(
+            "Seed",
+            "Sampling seed.\nNegative numbers shuffle the seed randomly for each generation.",
+            "gen_seed"
+        )
+
+        self.add_config_field(
+            "Temperature",
+            "Sampling temperature.",
+            "gen_temp"
+        )
+
+        self.new_row()
+
+    def new_row(self) -> None:
+        """ Add a new row. """
+
+        self._last_row = QHBoxLayout()
+        self._last_row.setContentsMargins(0, 0, 0, 0)
+        self._last_row.setSpacing(15)
+        self._last_row.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.layout().addLayout(self._last_row)
+
+    def add_config_field(self,
+            title: str,
+            desc: str = "",
+            setting: str = ""
+            ) -> None:
+        """
+        Add new configuration section.
+
+        Parameters
+        ----------
+        title
+            Short title of the field
+        desc
+            Description of the field
+        setting
+            Setting key
+        """
+        if self._last_row.count() >= 3:
+            self.new_row()
+
+        field_lyt = QVBoxLayout()
+        field_lyt.setContentsMargins(0, 0, 0, 0)
+
+        field_wdg = QWidget()
+        field_wdg.setLayout(field_lyt)
+        field_wdg.setFixedHeight(130)
+        self._last_row.addWidget(field_wdg)
+
+        title_lbl = TypoLabel(title, TypographyType.SUBTITLE)
+        shared.theme.add_widget(title_lbl)
+        field_lyt.addWidget(title_lbl)
+
+        if desc:
+            desc_lbl = TypoLabel(desc, TypographyType.BODY)
+            desc_lbl.setWordWrap(True)
+            desc_lbl.color = "text_secondary"
+            shared.theme.add_widget(desc_lbl)
+            field_lyt.addWidget(desc_lbl)
+
+        field_lyt.addStretch()
+
+        # TODO: Make this reusable, settings View also uses exact same stuff
+        #       something like SettingsLineEdit?
+        if setting:
+            if isinstance(shared.settings[setting], str):
+                line = LineEdit(shared.settings[setting])
+                shared.theme.add_widget(line)
+                field_lyt.addWidget(line, alignment=Qt.AlignmentFlag.AlignBottom)
+
+                @line.editingFinished.connect
+                def _():
+                    shared.settings[setting] = line.text()
+
+            elif isinstance(shared.settings[setting], int):
+                line = LineEdit(str(shared.settings[setting]))
+                shared.theme.add_widget(line)
+                field_lyt.addWidget(line, alignment=Qt.AlignmentFlag.AlignBottom)
+
+                @line.editingFinished.connect
+                def _():
+                    value = line.text()
+                    
+                    try:
+                        value = int(value)
+                    except ValueError:
+                        value = shared.settings[setting]
+
+                    shared.settings[setting] = value
+                    line.setText(str(value))
+
+            elif isinstance(shared.settings[setting], float):
+                line = LineEdit(str(shared.settings[setting]))
+                shared.theme.add_widget(line)
+                field_lyt.addWidget(line, alignment=Qt.AlignmentFlag.AlignBottom)
+
+                @line.editingFinished.connect
+                def _():
+                    value = line.text()
+                    
+                    try:
+                        value = float(value)
+                    except ValueError:
+                        value = shared.settings[setting]
+
+                    shared.settings[setting] = value
+                    line.setText(str(value))
 
 class View(BaseView):
     """
@@ -189,6 +308,10 @@ class View(BaseView):
         shared.theme.add_widget(self.model_panel)
         self.content_lyt.addWidget(self.model_panel)
 
+        self.content_lyt.addSpacing(45)
+
+        h1("Model Configuration", self.content_lyt)
+
         self.content_lyt.addSpacing(20)
 
         self.model_config = ModelConfiguration()
@@ -198,6 +321,9 @@ class View(BaseView):
 
 
 class LoaderWorker(QThread):
+    """
+    Threaded model loader.
+    """
 
     load_success = pyqtSignal()
     load_fail = pyqtSignal()

@@ -153,7 +153,7 @@ class View(BaseView):
                 setting_lyt.addWidget(sw, alignment=Qt.AlignmentFlag.AlignRight)
 
                 @sw.toggled.connect
-                def sw_slot():
+                def _():
                     shared.settings[setting] = sw.on
 
             elif isinstance(shared.settings[setting], str):
@@ -166,7 +166,7 @@ class View(BaseView):
                 line_lyt.addWidget(line)
 
                 @line.editingFinished.connect
-                def line_slot():
+                def _():
                     shared.settings[setting] = line.text()
 
                 if browse_file:
@@ -177,7 +177,7 @@ class View(BaseView):
                     line_lyt.addWidget(browse_btn)
 
                     @browse_btn.clicked.connect
-                    def browse_slot():
+                    def _():
                         path = QFileDialog.getOpenFileName(
                             self,
                             str(Path.cwd().absolute()),
@@ -192,13 +192,13 @@ class View(BaseView):
                 desc_lyt.addWidget(line)
 
                 @line.editingFinished.connect
-                def line_slot():
+                def _():
                     value = line.text()
                     
                     try:
                         value = float(value)
                     except ValueError:
-                        value = 0.0
+                        value = shared.settings[setting]
 
                     shared.settings[setting] = value
                     line.setText(str(value))

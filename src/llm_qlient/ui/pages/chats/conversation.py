@@ -22,8 +22,7 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QSizePolicy,
     QScrollArea,
-    QPlainTextEdit,
-    QBoxLayout
+    QPlainTextEdit
 )
 from PyQt6.QtGui import QPainter, QPainterPath, QFontMetrics
 from freshqt.core import TypographyType, Theme, Themeable, SyntaxLanguage
@@ -44,6 +43,7 @@ from llm_qlient.core.models import (
     GenerationRequest
 )
 from llm_qlient.ui.pages.chats.chat_history import ChatHistory
+from llm_qlient.ui.layout_utils import recursive_clear
 
 
 class InputComposer(QWidget, Themeable):
@@ -149,53 +149,6 @@ class InputComposer(QWidget, Themeable):
             self.retry_btn.show()
             self.continue_btn.show()
             self.stop_btn.hide()
-
-
-def recursive_clear(
-        layout: QBoxLayout,
-        remove_layouts: bool = True,
-        remove_widgets: bool = True,
-        remove_items: bool = True
-        ) -> None:
-    """
-    Clear out a layout recursively.
-
-    Parameters
-    ----------
-    layout
-        Layout to clear recursively
-    remove_layouts
-        Remove children layouts
-    remove_widgets
-        Remove children widgets
-    remove_items
-        Remove children spacer items
-    """
-    for i in reversed(range(layout.count())):
-        item = layout.itemAt(i)
-
-        if remove_layouts:
-            lyt = item.layout()
-            if lyt is not None:
-                recursive_clear(
-                    lyt, remove_layouts, remove_widgets, remove_items
-                )
-                layout.removeItem(lyt)
-                lyt.setParent(None)
-                lyt.deleteLater()
-
-        if remove_widgets:
-            wdg = item.widget()
-            if wdg is not None:
-                shared.theme.remove_widget(wdg, update=False)
-                layout.removeWidget(wdg)
-                wdg.setParent(None)
-                wdg.deleteLater()
-
-        if remove_items:
-            s = item.spacerItem()
-            if s is not None:
-                layout.removeItem(s)
 
 
 class ConversationBubble(QWidget, Themeable):

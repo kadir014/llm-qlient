@@ -14,7 +14,7 @@ import queue
 
 from PyQt6.QtCore import QThread, pyqtSignal, pyqtSlot
 
-from panllm import GenerationConfig, ChatChunk, LLMBackend
+from panllm import GenerationConfig, ChatChunk, LLMBackend, BaseStream
 
 from llm_qlient import shared
 from llm_qlient.core import log
@@ -65,6 +65,22 @@ class Generator(QThread):
     def _log_repr(self) -> str:
         return f"<fg.blue>[Thrd#{int(self.currentThreadId())}] GEN:</>"
     
+    def _log_config(self, cfg: GenerationConfig) -> None:
+        log.debug(
+            f"{self._log_repr()} Generation config:\n"
+            f"Max length:  <fg.lightcyan>{cfg.max_tokens}</> tokens\n"
+            f"Seed:        <fg.lightcyan>{shared.model.seed}</>\n"
+            f"Temperature: <fg.lightcyan>{cfg.temperature}</>"
+        )
+
+    def _log_stats(self, stream: BaseStream) -> None:
+        log.debug(
+            f"{self._log_repr()} Generation finished:\n"
+            f"<fg.lightcyan>{stream.stats.tokens}</> tokens\n"
+            f"<fg.lightcyan>{round(stream.stats.elapsed, 2)}</> s\n"
+            f"<fg.lightcyan>{round(stream.stats.tokens_per_second, 2)}</> t/s"
+        )
+    
     def run(self) -> None:
         log.info(f"{self._log_repr()} Generator started")
 
@@ -82,9 +98,12 @@ class Generator(QThread):
             self.generation_started.emit(request.mode)
 
             cfg = GenerationConfig(
-                max_tokens=256,
-                temperature=0.7
+                max_tokens=shared.settings["gen_length"],
+                temperature=shared.settings["gen_temp"]
             )
+            shared.model.seed = shared.settings["gen_seed"]
+
+            self._log_config(cfg)
 
             # FIXME
             if shared.model is not None and shared.model.backend != LLMBackend.DUMMY:
@@ -125,12 +144,7 @@ class Generator(QThread):
                 # Every chunk will carry the role, so we can just use the last chunk
                 full_chunk = ChatChunk(last_chunk.role, full_content)
 
-            log.debug(
-                f"{self._log_repr()} Generation finished:\n"
-                f"<fg.lightcyan>{stream.stats.tokens}</> tokens\n"
-                f"<fg.lightcyan>{round(stream.stats.elapsed, 2)}</> s\n"
-                f"<fg.lightcyan>{round(stream.stats.tokens_per_second, 2)}</> t/s"
-            )
+            self._log_stats(stream)
 
             # The queue might have been exhausted by the main thread for termination
             if self.should_run:

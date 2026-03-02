@@ -104,6 +104,10 @@ settings = Settings({
 
     "model_path": None,
 
+    "gen_length": 512,
+    "gen_seed": 2147483647,
+    "gen_temp": 0.8,
+
     "center_conversation_view": True,
 
     "system_metrics_show": True,
