@@ -12,7 +12,6 @@
 
 import os
 import platform
-from time import perf_counter
 from pathlib import Path
 
 from PyQt6.QtCore import qInstallMessageHandler, QtMsgType, QMessageLogContext
@@ -20,6 +19,7 @@ from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QFont, QFontDatabase
 from freshqt.assets import HEROICONS
 from panllm import LLM, LLMBackend, LLMConfig
+import miniprofiler
 
 from llm_qlient import shared
 from llm_qlient.core import log
@@ -42,61 +42,59 @@ class App:
     """
 
     def __init__(self) -> None:
-        start = perf_counter()
+        prof = miniprofiler.Profiler()
+        with prof.profile("init"):
 
-        # Redirect Qt's messages to our logger
-        qInstallMessageHandler(self._handle_qt_log)
+            # Redirect Qt's messages to our logger
+            qInstallMessageHandler(self._handle_qt_log)
 
-        ROOT = Path.cwd()
+            shared.qapp = QApplication([])
 
-        shared.qapp = QApplication([])
+            ROOT = Path.cwd()
 
-        # TODO: better path for data fonts icons etc
+            for root, _, files in os.walk(ROOT / "data" / "fonts"):
+                for file in files:
+                    fontpath = os.path.join(root, file)
+                    font_id = QFontDatabase.addApplicationFont(fontpath)
+                    if font_id < 0:
+                        log.warn(f"Font '{file}' couldn't load.")
+                    else:
+                        font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
+                        log.info(f"Font '{file}' loaded in family {font_family}")
 
-        for root, _, files in os.walk(ROOT / "data" / "fonts"):
-            for file in files:
-                fontpath = os.path.join(root, file)
-                font_id = QFontDatabase.addApplicationFont(fontpath)
-                if font_id < 0:
-                    log.warn(f"Font '{file}' couldn't load.")
-                else:
-                    font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
-                    log.info(f"Font '{file}' loaded in family {font_family}")
+            if platform.system() == "Windows":
+                # https://stackoverflow.com/a/67219364
+                # PreferNoHinting solves fonts looking weird on Windows
+                font = shared.qapp.font()
+                font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
+                shared.qapp.setFont(font)
 
-        if platform.system() == "Windows":
-            # https://stackoverflow.com/a/67219364
-            # PreferNoHinting solves fonts looking weird on Windows
-            font = shared.qapp.font()
-            font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
-            shared.qapp.setFont(font)
+            # SVG icons have to be loaded before any raster icons so Qt can select proper icon engine
+            for icon_path in HEROICONS.keys():
+                shared.icons.load_single(icon_path)
+            shared.icons.load(ROOT / "data" / "icons")
 
-        # SVG icons have to be loaded before any raster icons so Qt can select proper icon engine
-        for icon_path in HEROICONS.keys():
-            shared.icons.load_single(icon_path)
-        shared.icons.load(ROOT / "data" / "icons")
+            shared.theme.font_family = "Outfit"
+            shared.theme.update_palette(UI_CATPPUCCIN_MOCHA)
 
-        shared.theme.font_family = "Outfit"
-        shared.theme.update_palette(UI_CATPPUCCIN_MOCHA)
+            shared.settings.changed.connect(self._settings_changed)
 
-        shared.settings.changed.connect(self._settings_changed)
+            shared.contents.load_all()
 
-        shared.contents.load_all()
+            shared.model = LLM(LLMConfig(""), LLMBackend.DUMMY)
 
-        shared.model = LLM(LLMConfig(""), LLMBackend.DUMMY)
+            shared.gen = Generator()
+            shared.gen.start()
 
-        shared.gen = Generator()
-        shared.gen.start()
+            shared.main_window = MainWindow()
+            shared.theme.add_widget(shared.main_window)
+            shared.main_window.hide()
 
-        shared.main_window = MainWindow()
-        shared.theme.add_widget(shared.main_window)
-        shared.main_window.hide()
+            shared.toasts = ToastManager(shared.main_window)
 
-        shared.toasts = ToastManager(shared.main_window)
+            shared.cleanup.connect(self._cleanup)
 
-        shared.cleanup.connect(self.cleanup)
-
-        elapsed = perf_counter() - start
-        log.info(f"App is initialized in <fg.lightcyan>{round(elapsed, 3)}</>s (<fg.lightcyan>{round(elapsed*1000, 3)}</>ms)")
+        log.info(f"App is initialized in {log.t(prof['init'].last)}")
 
     def _handle_qt_log(self, type_: QtMsgType, ctx: QMessageLogContext, msg: str) -> None:
         level_map = {
@@ -132,7 +130,7 @@ class App:
                 shared.theme.font_family = "Outfit"
                 shared.theme.update_palette(theme)
 
-    def cleanup(self) -> None:
+    def _cleanup(self) -> None:
         shared.gen.should_run = False
         shared.gen._queue.shutdown()
         shared.gen.wait(5000)
@@ -141,6 +139,8 @@ class App:
             shared.model.release()
 
     def run(self) -> int:
+        """ Start running application. """
+
         shared.main_window.show()
 
         # After the main window is shown, all the layouts will be settled
