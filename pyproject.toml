@@ -27,7 +27,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 
 [project.scripts]
-main = "llm_qlient.main:main"
+main = "llm_qlient.__main__:main"
 
 [project.urls]
 homepage = "https://github.com/kadir014/llm-qlient"
