@@ -23,7 +23,14 @@ from PyQt6.QtWidgets import (
     QFileDialog
 )
 from freshqt.core import TypographyType
-from freshqt.widgets import Button, TypoLabel, Switch, LineEdit, BadgeLabel
+from freshqt.widgets import (
+    Button,
+    TypoLabel,
+    Switch,
+    LineEdit,
+    BadgeLabel,
+    Slider
+)
 
 from llm_qlient import shared
 from llm_qlient.ui.pages.base_view import BaseView
@@ -46,14 +53,14 @@ class View(BaseView):
         content.setMaximumWidth(880)
         content.setMinimumWidth(620)
 
-        content_scroller = QScrollArea()
-        content_scroller.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        content_scroller.setWidget(content)
-        content_scroller.setWidgetResizable(True)
-        content_scroller.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        outer_layout.addWidget(content_scroller)
+        self.content_scroller = QScrollArea()
+        self.content_scroller.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.content_scroller.setWidget(content)
+        self.content_scroller.setWidgetResizable(True)
+        self.content_scroller.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        outer_layout.addWidget(self.content_scroller)
 
-        content_scroller.setStyleSheet("""
+        self.content_scroller.setStyleSheet("""
             QScrollArea {
                 background: transparent;
                 border: none;
@@ -72,7 +79,7 @@ class View(BaseView):
 
         self.content_lyt.addSpacing(9)
 
-        self.setting(
+        self.add_setting(
             "Theme",
             "Filepath to global application theme to use.\nYou can use the native ones with the indicator \"builtin: ...\".",
             "theme",
@@ -81,35 +88,43 @@ class View(BaseView):
 
         hdivider(3, self.content_lyt)
 
-        self.setting(
+        self.add_setting(
             "Center conversation view",
             "Try to center conversation view relative to viewport instead of its layout.\nMight be more visually appealing for some.",
             "center_conversation_view"
         )
 
+        self.add_setting(
+            "Font scale",
+            "Scaling factor applied to almost all text content on the interface.",
+            "ui_font_scale",
+            slider=True
+        )
+
         hdivider(3, self.content_lyt)
 
-        self.setting("Show system metrics", "", "system_metrics_show")
+        self.add_setting("Show system metrics", "", "system_metrics_show")
 
-        self.setting(
+        self.add_setting(
             "System metrics update frequency",
             "Controls how often the system metrics are refreshed, in seconds.",
             "system_metrics_interval"
         )
 
-        self.setting(
+        self.add_setting(
             "System metrics display format",
             "Customize the text shown for system metrics in the status bar. For example <code>\"CPU usage: {cpu}%\"</code>.",
             "system_metrics_formatter"
         )
 
-        self.version_section()
+        self.add_version_section()
 
-    def setting(self,
+    def add_setting(self,
             text: str,
             desc: str,
             setting: str | None = None,
-            browse_file: bool = False
+            browse_file: bool = False,
+            slider: bool = False
             ) -> None:
         """
         Add new setting section.
@@ -124,6 +139,8 @@ class View(BaseView):
             Setting key
         browse_file
             Whether to add a file browsing option to text input
+        slider
+            Use a slider instead of text input for numerical settings
         """
 
         setting_lyt = QHBoxLayout()
@@ -187,23 +204,59 @@ class View(BaseView):
                         shared.settings[setting] = path
 
             elif isinstance(shared.settings[setting], float):
-                line = LineEdit(str(shared.settings[setting]))
-                shared.theme.add_widget(line)
-                desc_lyt.addWidget(line)
+                if slider:
+                    slider_lyt = QHBoxLayout()
+                    slider_lyt.setContentsMargins(0, 0, 0, 0)
+                    slider_lyt.setSpacing(10)
+                    desc_lyt.addLayout(slider_lyt)
 
-                @line.editingFinished.connect
-                def _():
-                    value = line.text()
-                    
-                    try:
-                        value = float(value)
-                    except ValueError:
-                        value = shared.settings[setting]
+                    sl = Slider()
+                    shared.theme.add_widget(sl)
+                    slider_lyt.addWidget(sl)
 
-                    shared.settings[setting] = value
-                    line.setText(str(value))
+                    # TODO: Hardcoded magic numbers! Make them configurable
+                    # [0.25, 2.0] * 100
+                    sl.setMaximum(200)
+                    sl.setMinimum(25)
+                    sl.setValue(int(shared.settings[setting] * 100.0))
+                    sl.setSingleStep(25)
+
+                    sl.setFixedHeight(16)
+
+                    slider_lbl = BadgeLabel(f"{round(shared.settings[setting] * 100.0)}%")
+                    slider_lbl.bg_color = "background_tertiary"
+                    shared.theme.add_widget(slider_lbl)
+                    slider_lyt.addWidget(slider_lbl)
+
+                    @sl.sliderReleased.connect
+                    def _():
+                        value = float(sl.value()) / 100.0
+                        shared.settings[setting] = value
+                        slider_lbl.setText(f"{round(value * 100.0)}%")
+
+                    @sl.valueChanged.connect
+                    def _():
+                        value = float(sl.value()) / 100.0
+                        slider_lbl.setText(f"{round(value * 100.0)}%")
+
+                else:
+                    line = LineEdit(str(shared.settings[setting]))
+                    shared.theme.add_widget(line)
+                    desc_lyt.addWidget(line)
+
+                    @line.editingFinished.connect
+                    def _():
+                        value = line.text()
+                        
+                        try:
+                            value = float(value)
+                        except ValueError:
+                            value = shared.settings[setting]
+
+                        shared.settings[setting] = value
+                        line.setText(str(value))
         
-    def version_section(self) -> None:
+    def add_version_section(self) -> None:
         """ Add a version information section. """
 
         desc_lyt = QVBoxLayout()

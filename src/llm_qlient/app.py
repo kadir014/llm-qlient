@@ -130,6 +130,9 @@ class App:
                 shared.theme.font_family = "Outfit"
                 shared.theme.update_palette(theme)
 
+        if "ui_font_scale" in changed:
+            shared.theme.font_scale = changed["ui_font_scale"]
+
     def _cleanup(self) -> None:
         shared.gen.should_run = False
         shared.gen._queue.shutdown()

@@ -109,6 +109,7 @@ settings = Settings({
     "gen_temp": 0.8,
 
     "center_conversation_view": True,
+    "ui_font_scale": 1.0,
 
     "system_metrics_show": True,
     "system_metrics_interval": 2.0,
