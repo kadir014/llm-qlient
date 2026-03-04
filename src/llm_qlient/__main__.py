@@ -20,7 +20,7 @@ from datetime import datetime
 import panllm
 
 from llm_qlient import shared
-from llm_qlient.core import log
+from llm_qlient.core import log, path
 from llm_qlient.app import App
 
 
@@ -48,7 +48,7 @@ def main() -> None:
     if "--debug" in sys.argv:
         min_level = log.LogLevel.DEBUG
 
-    log_file = open("llm-qlient.log", "w", encoding="utf-8")
+    log_file = open(path.resolve("llm-qlient.log"), "w", encoding="utf-8")
     log.targets.add(log.LogTarget(sys.stdout, colored=True, min_level=min_level))
     log.targets.add(log.LogTarget(log_file, colored=False, min_level=min_level))
 

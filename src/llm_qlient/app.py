@@ -22,7 +22,7 @@ from panllm import LLM, LLMBackend, LLMConfig
 import miniprofiler
 
 from llm_qlient import shared
-from llm_qlient.core import log
+from llm_qlient.core import log, path
 from llm_qlient.core.types import SettingsDict
 from llm_qlient.core.generator import Generator
 from llm_qlient.ui.main_window import MainWindow
@@ -50,9 +50,7 @@ class App:
 
             shared.qapp = QApplication([])
 
-            ROOT = Path.cwd()
-
-            for root, _, files in os.walk(ROOT / "data" / "fonts"):
+            for root, _, files in os.walk(path.resolve("data", "fonts")):
                 for file in files:
                     fontpath = os.path.join(root, file)
                     font_id = QFontDatabase.addApplicationFont(fontpath)
@@ -72,7 +70,7 @@ class App:
             # SVG icons have to be loaded before any raster icons so Qt can select proper icon engine
             for icon_path in HEROICONS.keys():
                 shared.icons.load_single(icon_path)
-            shared.icons.load(ROOT / "data" / "icons")
+            shared.icons.load(path.resolve("data", "icons"))
 
             shared.theme.font_family = "Outfit"
             shared.theme.update_palette(UI_CATPPUCCIN_MOCHA)

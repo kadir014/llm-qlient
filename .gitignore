@@ -3,6 +3,9 @@ uv.lock
 settings.json
 data/content/*.json
 mprofile_*.dat
+*_venv/
+pyinstaller_build/
+pyinstaller_dist/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

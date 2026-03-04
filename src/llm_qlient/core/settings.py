@@ -18,7 +18,7 @@ from pathlib import Path
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
-from llm_qlient.core import log
+from llm_qlient.core import log, path
 from llm_qlient.core.types import SettingsDict
 
 
@@ -32,13 +32,13 @@ def load_settings(filename: str = "settings.json") -> SettingsDict:
         Name of the file to read
     """
 
-    path = Path.cwd() / filename
+    settings_path = path.resolve(filename)
 
-    if not os.path.exists(path) or not os.path.isfile(path):
+    if not os.path.exists(settings_path) or not os.path.isfile(settings_path):
         log.debug("No user settings file found.")
         return {}
     
-    with open(path, "r", encoding="utf-8") as file:
+    with open(settings_path, "r", encoding="utf-8") as file:
         return json.loads(file.read())
 
 
@@ -56,10 +56,10 @@ def save_settings(settings: SettingsDict, filename: str = "settings.json") -> No
         Name of the file to write on
     """
 
-    path = Path.cwd() / filename
+    settings_path = path.resolve(filename)
 
     try:
-        with open(path, "w", encoding="utf-8") as file:
+        with open(settings_path, "w", encoding="utf-8") as file:
             file.write(json.dumps(settings))
 
     except OSError as e:

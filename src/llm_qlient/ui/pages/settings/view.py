@@ -219,7 +219,10 @@ class View(BaseView):
                     sl.setMaximum(200)
                     sl.setMinimum(25)
                     sl.setValue(int(shared.settings[setting] * 100.0))
-                    sl.setSingleStep(25)
+
+                    # To disable controlling with mouse wheel and arrow keys
+                    sl.setSingleStep(0)
+                    sl.setPageStep(0)
 
                     sl.setFixedHeight(16)
 

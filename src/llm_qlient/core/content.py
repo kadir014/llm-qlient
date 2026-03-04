@@ -17,7 +17,7 @@ from pathlib import Path
 import miniprofiler
 
 from llm_qlient import shared
-from llm_qlient.core import log
+from llm_qlient.core import log, path
 from llm_qlient.core.types import JSONContent
 from llm_qlient.core.models import Conversation, UserPersona, Character
 
@@ -80,15 +80,13 @@ class ContentManager:
     """
 
     def __init__(self) -> None:
-        self.root = Path.cwd()
-
         self._prof = miniprofiler.Profiler(1)
 
     def load_conversations(self) -> None:
         with self._prof.profile("load"):
             convos_json = load_content(
-                self.root / "data" / "content" / "conversations.json",
-                self.root / "data" / "content" / "conversations.json.template"
+                path.resolve("data", "content", "conversations.json"),
+                path.resolve("data", "content", "conversations.json.template")
             )
 
             for convo in convos_json:
@@ -99,7 +97,7 @@ class ContentManager:
     def save_conversations(self) -> None:
         with self._prof.profile("save"):
             save_content(
-                self.root / "data" / "content" / "conversations.json",
+                path.resolve("data", "content", "conversations.json"),
                 [convo.serialize() for convo in shared.convos]
             )
 
@@ -108,8 +106,8 @@ class ContentManager:
     def load_user_personas(self) -> None:
         with self._prof.profile("load"):
             personas_json = load_content(
-                self.root / "data" / "content" / "user_personas.json",
-                self.root / "data" / "content" / "user_personas.json.template"
+                path.resolve("data", "content", "user_personas.json"),
+                path.resolve("data", "content", "user_personas.json.template")
             )
 
             for persona in personas_json:
@@ -120,7 +118,7 @@ class ContentManager:
     def save_user_personas(self) -> None:
         with self._prof.profile("save"):
             save_content(
-                self.root / "data" / "content" / "user_personas.json",
+                path.resolve("data", "content", "user_personas.json"),
                 [persona.serialize() for persona in shared.personas]
             )
 
@@ -129,8 +127,8 @@ class ContentManager:
     def load_characters(self) -> None:
         with self._prof.profile("load"):
             chars_json = load_content(
-                self.root / "data" / "content" / "characters.json",
-                self.root / "data" / "content" / "characters.json.template"
+                path.resolve("data", "content", "characters.json"),
+                path.resolve("data", "content", "characters.json.template")
             )
 
             for char in chars_json:
@@ -141,7 +139,7 @@ class ContentManager:
     def save_characters(self) -> None:
         with self._prof.profile("save"):
             save_content(
-                self.root / "data" / "content" / "characters.json",
+                path.resolve("data", "content", "characters.json"),
                 [char.serialize() for char in shared.characters]
             )
 
