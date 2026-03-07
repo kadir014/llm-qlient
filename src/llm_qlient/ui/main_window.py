@@ -108,6 +108,19 @@ class MainWindow(QWidget, Themeable):
         if action == "quit":
             self.close()
 
+        elif action == "ui_increase_font":
+            scale = shared.settings["ui_font_scale"]
+            scale = min(scale + 0.25, 2.0)
+            shared.settings["ui_font_scale"] = scale
+
+        elif action == "ui_decrease_font":
+            scale = shared.settings["ui_font_scale"]
+            scale = max(scale - 0.25, 0.25)
+            shared.settings["ui_font_scale"] = scale
+
+        elif action == "ui_reset_font":
+            shared.settings["ui_font_scale"] = 1.0
+
     def update_theme(self, theme: Theme) -> None:
         if platform.system() == "Windows":
             ret = change_titlebar_theme(self, theme.palette.is_dark)

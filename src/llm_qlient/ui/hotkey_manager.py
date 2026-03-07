@@ -36,6 +36,9 @@ class HotkeyManager(QObject):
         # TODO: This will come from settings
         self._actions: dict[str, str | tuple[str]] = {
             "quit": "Ctrl+Q",
+            "ui_increase_font": "Ctrl++",
+            "ui_decrease_font": "Ctrl+-",
+            "ui_reset_font": "Ctrl+0"
         }
 
         self._shortcuts: dict[str, QShortcut] = {}
