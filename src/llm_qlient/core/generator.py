@@ -119,14 +119,36 @@ class Generator(QThread):
             if request.mode == "retry" and messages[-1]["role"] == "assistant":
                 messages = messages[:-1]
 
-            stream = shared.model.stream_chat(
-                messages,
-                generation_config=cfg
-            )
+            if request.mode == "continue":
+                # Temporarily disable appending new section tokens
+                formatter_state = shared.model._formatter.add_generation_prompt
+                shared.model._formatter.add_generation_prompt = False
+                prompt: str = shared.model._formatter(messages=messages).prompt
+                shared.model._formatter.add_generation_prompt = formatter_state
+
+                # Remove any leftover tokens so it can continue generating smoothly
+                prompt = prompt.rstrip()
+                prompt = prompt.removesuffix(shared.model.eos_token)
+                prompt = prompt.removeprefix(shared.model.bos_token)
+
+                stream = shared.model.stream(
+                    prompt,
+                    generation_config=cfg
+                )
+
+            else:
+                stream = shared.model.stream_chat(
+                    messages,
+                    generation_config=cfg
+                )
 
             full_content = ""
             last_chunk: ChatChunk | None = None
             for chunk in stream:
+                # In 'continue' mode, regular text generation is done
+                if isinstance(chunk, str):
+                    chunk = ChatChunk("assistant", chunk)
+
                 last_chunk = chunk
 
                 full_content += chunk.content
