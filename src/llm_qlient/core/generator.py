@@ -120,14 +120,23 @@ class Generator(QThread):
                 messages = messages[:-1]
 
             if request.mode == "continue":
-                # Temporarily disable appending new section tokens
+                # Remove the last assistant message so we can insert generation tag
+                # It will be added later
+                prompt_msgs = messages[:-1]
+
                 formatter_state = shared.model._formatter.add_generation_prompt
-                shared.model._formatter.add_generation_prompt = False
-                prompt: str = shared.model._formatter(messages=messages).prompt
+                shared.model._formatter.add_generation_prompt = True
+                prompt: str = shared.model._formatter(messages=prompt_msgs).prompt
                 shared.model._formatter.add_generation_prompt = formatter_state
 
-                # Remove any leftover tokens so it can continue generating smoothly
-                prompt = prompt.rstrip()
+                # chatml-like formats place a '\n' after role tags
+                # prompt = prompt.rstrip()
+
+                # Append the unfinished assistant content back
+                prompt += messages[-1]["content"]
+
+                # I haven't encountered this, but remove any leftover tokens
+                # so it can continue generating smoothly just in case
                 prompt = prompt.removesuffix(shared.model.eos_token)
                 prompt = prompt.removeprefix(shared.model.bos_token)
 
