@@ -36,16 +36,12 @@ class View(BaseView):
         shared.theme.add_widget(self.chat_history)
         outer_layout.addWidget(self.chat_history)
 
-        outer_layout.addStretch()
-
         self.convo_view = ConversationView()
-        self.convo_view.setFixedWidth(880)
         self.convo_view.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+           QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
         outer_layout.addWidget(self.convo_view)
 
-        outer_layout.addStretch()
         self.hidden_spacer = QSpacerItem(
             self.chat_history.size().width(),
             10,

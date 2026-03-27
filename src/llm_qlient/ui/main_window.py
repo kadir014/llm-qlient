@@ -38,7 +38,7 @@ class MainWindow(QWidget, Themeable):
         self.setWindowTitle(f"LLM Qlient v{shared.__version__}")
         self.setWindowIcon(shared.icons.get("windowicon"))
         self.resize(1280, 720)
-        self.setMinimumSize(640, 360)
+        self.setMinimumSize(880+260, 360)
 
         # This needs to be created *after* main window is defined, but *before*
         # all content is initialized so that they can listen to hotkeys.

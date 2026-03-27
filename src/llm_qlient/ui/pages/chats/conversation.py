@@ -198,45 +198,6 @@ class ConversationBubble(QWidget, Themeable):
         self.name_lbl.setText(name)
         shared.theme.add_widget(self.name_lbl)
 
-        if rtl:
-            title_lyt.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            title_lyt.addWidget(self.name_lbl)
-            title_lyt.addWidget(self.avatar)
-
-        else:
-            title_lyt.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-            title_lyt.addWidget(self.avatar)
-            title_lyt.addWidget(self.name_lbl)
-
-        self.content_lyt = QVBoxLayout()
-        self.content_lyt.setContentsMargins(0, 0, 0, 0)
-        self.content_lyt.setSpacing(10)
-        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        layout.addLayout(self.content_lyt)
-
-        self.__edit_mode = False
-
-        self.editor = QPlainTextEdit()
-        self.editor.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.editor.hide()
-        self.editor.setObjectName("msg_editor")
-        self.content_lyt.addWidget(self.editor)
-
-        self.__content_wdgs: list[QWidget] = []
-
-        self.footer_lyt = QHBoxLayout()
-        self.footer_lyt.setContentsMargins(0, 0, 0, 0)
-        self.footer_lyt.setSpacing(5)
-        layout.addLayout(self.footer_lyt)
-
-        self.footer_avatar = Avatar()
-        shared.theme.add_widget(self.footer_avatar)
-        self.footer_avatar.setFixedSize(16, 16)
-
-        dt = datetime.fromtimestamp(convo_msg.timestamp)
-        self.footer_text = TypoLabel(f"Sent by {name} at {dt.strftime('%H:%M')}", type=TypographyType.CAPTION)
-        shared.theme.add_widget(self.footer_text)
-
         self.footer_edit_btn = Button(icon_name="hi-pencil", variant=Button.Variant.GHOST)
         shared.theme.add_widget(self.footer_edit_btn)
         self.footer_edit_btn.border_radius = -1
@@ -255,20 +216,50 @@ class ConversationBubble(QWidget, Themeable):
         self.footer_copy_btn.setToolTip("Copy message content")
 
         if rtl:
-            self.footer_lyt.addWidget(self.footer_copy_btn)
-            self.footer_lyt.addWidget(self.footer_edit_btn)
-            self.footer_lyt.addWidget(self.footer_text, alignment=Qt.AlignmentFlag.AlignRight)
-            self.footer_lyt.addWidget(self.footer_avatar)
+            title_lyt.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            title_lyt.addWidget(self.footer_copy_btn)
+            title_lyt.addWidget(self.footer_edit_btn)
+
+            title_lyt.addStretch()
+
+            title_lyt.addWidget(self.name_lbl)
+            title_lyt.addWidget(self.avatar)
+
         else:
-            self.footer_lyt.addWidget(self.footer_avatar)
-            self.footer_lyt.addWidget(self.footer_text)
-            self.footer_lyt.addWidget(self.footer_copy_btn, alignment=Qt.AlignmentFlag.AlignRight)
-            self.footer_lyt.addWidget(self.footer_edit_btn)
+            title_lyt.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            title_lyt.addWidget(self.avatar)
+            title_lyt.addWidget(self.name_lbl)
+
+            title_lyt.addStretch()
+
+            title_lyt.addWidget(self.footer_copy_btn)
+            title_lyt.addWidget(self.footer_edit_btn)
+
+        self.content_lyt = QVBoxLayout()
+        self.content_lyt.setContentsMargins(0, 0, 0, 0)
+        self.content_lyt.setSpacing(10)
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        layout.addLayout(self.content_lyt)
+
+        self.__edit_mode = False
+
+        self.editor = QPlainTextEdit()
+        self.editor.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.editor.hide()
+        self.editor.setObjectName("msg_editor")
+        self.content_lyt.addWidget(self.editor)
+
+        self.__content_wdgs: list[QWidget] = []
 
     @property
     def content(self) -> list[TypoLabel | Code]:
         """ Reference list to conversation bubble's content. """
         return self.__content_wdgs.copy()
+    
+    @property
+    def last_content_widget(self) -> None | TypoLabel | Code:
+        """ Last inserted widget to content, None if empty. """
+        return self.__content_wdgs[-1] if len(self.__content_wdgs) > 0 else None
     
     @property
     def edit_mode(self) -> bool:
@@ -325,8 +316,6 @@ class ConversationBubble(QWidget, Themeable):
     def update_theme(self, theme: Theme) -> None:
         palette = SYNTAX_CATPPUCCIN_MOCHA if theme.palette.is_dark else SYNTAX_CATPPUCCIN_LATTE
 
-        self.footer_text.color = theme.qcolor(theme.palette.text_tertiary)
-
         for wdg in self.__content_wdgs:
             if isinstance(wdg, Code):
                 wdg.syntax_palette = palette
@@ -350,18 +339,13 @@ class ConversationBubble(QWidget, Themeable):
     def theme_removed(self) -> None:
         shared.theme.remove_widget(self.avatar, update=False)
         shared.theme.remove_widget(self.name_lbl, update=False)
-        shared.theme.remove_widget(self.footer_avatar, update=False)
-        shared.theme.remove_widget(self.footer_text, update=False)
         shared.theme.remove_widget(self.footer_edit_btn, update=False)
         shared.theme.remove_widget(self.footer_copy_btn, update=False)
         shared.theme.remove_widget(self.editor, update=False)
 
         recursive_clear(self.layout())
-        
-        for widget in self.__content_wdgs:
-            shared.theme.remove_widget(widget, update=False)
-            widget.setParent(None)
-        self.__content_wdgs = []
+
+        self.clear_content()
 
     def copy(self) -> None:
         """ Copy message bubble text content into clipboard. """
@@ -375,6 +359,7 @@ class ConversationBubble(QWidget, Themeable):
             shared.theme.remove_widget(widget, update=False)
             self.content_lyt.removeWidget(widget)
             widget.setParent(None)
+            widget.deleteLater()
 
         self.__content_wdgs = []
     
@@ -400,13 +385,14 @@ class ConversationBubble(QWidget, Themeable):
                 max_width = max(width, max_width)
 
         # Make sure bubble title or footer doesn't collapse
-        title_width = self.name_lbl.sizeHint().width() + self.avatar.width() + 36
-        footer_width = (
-            self.footer_avatar.width() + 
-            self.footer_copy_btn.width() + self.footer_edit_btn.width() + 
-            self.footer_text.sizeHint().width() + 40
+        title_width = (
+            self.name_lbl.sizeHint().width() + 
+            self.avatar.width() +
+            self.footer_copy_btn.width() + 
+            self.footer_edit_btn.width() +
+            100
         )
-        max_width = max(max_width, max(title_width, footer_width))
+        max_width = max(max_width, title_width)
 
         self.setFixedWidth(min(max_width, 880))
 
@@ -431,13 +417,13 @@ class ConversationBubble(QWidget, Themeable):
         self.content_lyt.addWidget(code)
         self.__content_wdgs.append(code)
 
-    def add_content(self, content: str) -> QWidget:
+    def add_content(self, content: str) -> QWidget | None:
         """
         Add new content.
 
         Text is parsed and sections between triple backquotes are added as code blocks.
 
-        Returns the last created widget.
+        Returns the last created widget or None if failed.
 
         Parameters
         ----------
@@ -447,10 +433,11 @@ class ConversationBubble(QWidget, Themeable):
         i = 0
         subcontent = ""
         entered_code_block = True
+
         while i < len(content):
             char = content[i]
 
-            if char == "`" and content[i + 1] == "`" and content[i + 2] == "`":
+            if i + 2 < len(content) and char == "`" and content[i + 1] == "`" and content[i + 2] == "`":
 
                 if entered_code_block:
                     self._add_subcontent_label(subcontent)
@@ -472,7 +459,7 @@ class ConversationBubble(QWidget, Themeable):
         else:
             self._add_subcontent_code(subcontent)
 
-        return self.__content_wdgs[-1]
+        return self.last_content_widget
 
     def paintEvent(self, e) -> None:
         pt = QPainter(self)
@@ -514,6 +501,7 @@ class ConversationView(QWidget):
 
         self.content_scroller = QScrollArea()
         self.content_scroller.setWidget(self.bubbles_content)
+        self.content_scroller.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.content_scroller.setWidgetResizable(True)
         self.content_scroller.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         layout.addWidget(self.content_scroller)
@@ -529,9 +517,9 @@ class ConversationView(QWidget):
         layout.addSpacing(7)
 
         self.input_composer = InputComposer()
+        self.input_composer.setFixedWidth(880)
         shared.theme.add_widget(self.input_composer)
-        layout.addWidget(self.input_composer)
-        self.input_composer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        layout.addWidget(self.input_composer, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         # Disclaimer for when there are not conversations
         self.disclaimer = QWidget()
@@ -857,8 +845,8 @@ class ConversationController(QObject):
         if len(self.stream_bubble.content) == 0:
             self.stream_bubble.add_content("")
 
-        # -1 so 'continue' mode can append to the latest content element
-        last_cnt = self.stream_bubble.content[-1]
+        # Last widget so 'continue' mode can append to the latest content element
+        last_cnt = self.stream_bubble.last_content_widget
         # TODO: There is the small chance of last content widget being a Code editor
         #       in that case, add a new label content and just keep appending
         if isinstance(last_cnt, TypoLabel):

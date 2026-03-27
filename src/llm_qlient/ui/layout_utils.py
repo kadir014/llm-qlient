@@ -12,7 +12,7 @@
 
 from typing import Iterator
 
-from PyQt6.QtWidgets import QWidget, QLayout
+from PyQt6.QtWidgets import QWidget, QLayout, QSpacerItem, QWidgetItem
 
 from llm_qlient import shared
 
@@ -64,6 +64,8 @@ def recursive_clear(
 
     for i in reversed(range(layout.count())):
         item = layout.itemAt(i)
+        if item is None:
+            continue
 
         if remove_layouts:
             lyt = item.layout()
@@ -75,7 +77,7 @@ def recursive_clear(
                 lyt.setParent(None)
                 lyt.deleteLater()
 
-        if remove_widgets:
+        if remove_widgets and isinstance(item, QWidgetItem):
             wdg = item.widget()
             if wdg is not None:
                 shared.theme.remove_widget(wdg, update=False)
@@ -83,7 +85,9 @@ def recursive_clear(
                 wdg.setParent(None)
                 wdg.deleteLater()
 
-        if remove_items:
+        if remove_items and isinstance(item, QSpacerItem):
+            # TODO: This makes illegal memory access and crashes, what...
+            #       (QWidgetItem -> spacerItem())
             s = item.spacerItem()
             if s is not None:
                 layout.removeItem(s)
