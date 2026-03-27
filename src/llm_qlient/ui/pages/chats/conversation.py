@@ -99,6 +99,11 @@ class InputComposer(QWidget, Themeable):
         shared.theme.add_widget(self.stop_btn)
         buttons_lyt.addWidget(self.stop_btn)
 
+        self.send_btn.setToolTip("Send message")
+        self.retry_btn.setToolTip("Regenerate last assistant message")
+        self.continue_btn.setToolTip("Resume generating last assistant message")
+        self.stop_btn.setToolTip("Stop generating")
+
         self.set_buttons_state(False)
 
     def update_theme(self, theme: Theme) -> None:
@@ -245,6 +250,9 @@ class ConversationBubble(QWidget, Themeable):
         self.footer_copy_btn.setIconSize(QSize(18, 18))
         self.footer_copy_btn.setFixedSize(26, 26)
         self.footer_copy_btn.clicked.connect(self.copy)
+
+        self.footer_edit_btn.setToolTip("Edit message content")
+        self.footer_copy_btn.setToolTip("Copy message content")
 
         if rtl:
             self.footer_lyt.addWidget(self.footer_copy_btn)
@@ -490,7 +498,7 @@ class ConversationView(QWidget):
         super().__init__()
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(0, 12, 0, 12)
+        layout.setContentsMargins(0, 0, 0, 12)
         layout.setSpacing(0)
         self.setLayout(layout)
 
@@ -503,7 +511,6 @@ class ConversationView(QWidget):
         self.bubbles_content.setLayout(self.bubbles_lyt)
 
         self.bubbles_lyt.setAlignment(Qt.AlignmentFlag.AlignTop)
-        #self.bottom_spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.content_scroller = QScrollArea()
         self.content_scroller.setWidget(self.bubbles_content)
@@ -858,7 +865,7 @@ class ConversationController(QObject):
             last_cnt.setText(self.stream_msg.content)
         self.stream_bubble.set_word_wrapping(True)
 
-        self.view.content_scroller.ensureWidgetVisible(self.stream_bubble, yMargin=120)
+        #self.view.content_scroller.ensureWidgetVisible(self.stream_bubble, yMargin=120)
 
     def _chat_history_entry_clicked(self, convo: Conversation) -> None:
         self._remove_ref()

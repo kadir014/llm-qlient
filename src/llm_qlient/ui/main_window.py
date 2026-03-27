@@ -179,6 +179,15 @@ class MainWindow(QWidget, Themeable):
             QLabel, QTextEdit {{
                 selection-background-color: {theme.qss(theme.palette.text_selection)};
             }}
+
+            QToolTip {{
+                background-color: {theme.qss(theme.palette.background_tertiary)};
+                font-family: {theme.font_family};
+                font-size: 12px;
+                color: {theme.qss(theme.palette.text_primary)};
+                border: 1px solid {theme.qss(theme.palette.text_tertiary)};
+                border-radius: 7px;
+            }}
         """)
 
     def get_page_from_id(self, page_id: str) -> Page | None:
