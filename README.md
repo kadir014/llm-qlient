@@ -24,13 +24,16 @@ Qt-based lightweight desktop client for interacting with local Large Language Mo
 
 
 # Features
-- Easy to use, modern interface
-- Simple assistant character and user persona setup
+- Modern, user-friendly interface
+- Simple assistant character & user persona setup
+- Character cards menu
 - Customizable themeing
+- Resume unfinished generations
 - Unified inference for most models and quantizations
-  - [X] GGUF
-  - [ ] Safetensors
-  - [ ] EXL2 & EXL3
+  - [X] GGUF (llama.cpp)
+  - [ ] Safetensors (planned)
+  - [ ] EXL2 & EXL3 (planned)
+- Fine-grained sampling control (temperature, seed, top_p, etc.)
 
 
 
@@ -38,7 +41,7 @@ Qt-based lightweight desktop client for interacting with local Large Language Mo
 ❗ **Prerequisite:** Python 3.12+ is required.
 
 ## » Easy Installation
-LLM-Qlient provides an easy installation & running script called `run.py`. It is less customizable and chooses a predefined inference backend for the user. So, if you want to customize what you want in your installation, please refer to [Manual Installation](#-Manual-Installation).
+**LLM Qlient** provides an easy installation & running script called `run.py`. It is less customizable and chooses a predefined inference backend for the user. So, if you want to customize what you want in your installation, please refer to [Manual Installation](#-Manual-Installation).
 
 First, clone the repository.
 ```shell
@@ -62,12 +65,12 @@ $ cd llm-qlient
 $ python -m pip install uv
 ```
 
-For the first time, you can setup environment with `sync`. But it might remove non-dependencies if you do it after the first install, so be aware.
+For the first time, you can setup environment with `sync`. But it might remove non-dependencies if you do it after the first install, so be aware!
 ```shell
 $ uv sync
 ```
 
-At this stage, you need to install an inference backend dependencies. It doesn't matter which or how many, but you at least need one. Inference backends supported by LLM-Qlient:
+At this stage, you need to install an inference backend dependency. It doesn't matter which or how many, but you at least need one. Inference backends supported by **LLM Qlient**:
 - **llama-cpp-python:**
 
   I'd recommend using [JamePeng's fork as it is actually maintained.](https://github.com/JamePeng/llama-cpp-python) You can find more detailed information on their repository on how to download with specific GPU support. For example, you would need this for CUDA on Windows.
@@ -90,7 +93,7 @@ $ uv run main --debug
 
 
 # License
-**LLM-Qlient** project is [licensed under MIT License](LICENSE).
+**LLM Qlient** project is [licensed under MIT License](LICENSE).
 
 See [Third Party Licenses](NOTICE).
 
