@@ -13,7 +13,6 @@
 from typing import Iterator
 
 from functools import partial
-from datetime import datetime
 
 from PyQt6.QtCore import Qt, QSize, QObject, pyqtSlot
 from PyQt6.QtWidgets import (
@@ -22,9 +21,10 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QSizePolicy,
     QScrollArea,
-    QPlainTextEdit
+    QPlainTextEdit,
+    QSpacerItem
 )
-from PyQt6.QtGui import QPainter, QPainterPath, QFontMetrics
+from PyQt6.QtGui import QPainter, QPainterPath, QFontMetrics, QCursor
 from freshqt.core import TypographyType, Theme, Themeable, SyntaxLanguage
 from freshqt.widgets import Button, TypoLabel, Avatar, Code
 from freshqt.palettes.catppuccin import (
@@ -46,6 +46,41 @@ from llm_qlient.ui.pages.chats.chat_history import ChatHistory
 from llm_qlient.ui.layout_utils import recursive_clear
 
 
+class PairingEditor(QPlainTextEdit):
+    """
+    Plain text editor with auto-pairing.
+    """
+    
+    PAIRS = {
+        "\"": "\"",
+        "'": "'",
+        "(": ")",
+        "{": "}",
+        "[": "]",
+        "<": ">"
+    }
+
+    def keyPressEvent(self, e) -> None:
+        super().keyPressEvent(e)
+
+        if not shared.settings["editor_auto_pair"]:
+            return
+
+        key = e.text()
+
+        if key in PairingEditor.PAIRS:
+            cursor = self.textCursor()
+            pos = cursor.position()
+
+            pair = PairingEditor.PAIRS[key]
+            edited = self.toPlainText()
+            edited = edited[:pos] + pair + edited[pos:]
+            self.setPlainText(edited)
+
+            cursor.setPosition(pos)
+            self.setTextCursor(cursor)
+
+
 class InputComposer(QWidget, Themeable):
     """
     Input message composer widget.
@@ -63,8 +98,9 @@ class InputComposer(QWidget, Themeable):
         icon_height = round(composer_height / 4.7)
         self.setMaximumHeight(composer_height)
 
-        self.editor = QPlainTextEdit()
+        self.editor = PairingEditor()
         layout.addWidget(self.editor)
+        self.editor.setPlaceholderText("Ask anything to your local LLM...")
 
         buttons_lyt = QVBoxLayout()
         buttons_lyt.setContentsMargins(0, 0, 0, 0)
@@ -120,6 +156,7 @@ class InputComposer(QWidget, Themeable):
                 border: 1px solid {theme.qss(theme.palette.text_tertiary)};
                 border-radius: 10px;
                 selection-background-color: {theme.qss(theme.palette.text_selection)};
+                padding: 5px;
             }}
         """)
 
@@ -243,7 +280,7 @@ class ConversationBubble(QWidget, Themeable):
 
         self.__edit_mode = False
 
-        self.editor = QPlainTextEdit()
+        self.editor = PairingEditor()
         self.editor.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.editor.hide()
         self.editor.setObjectName("msg_editor")
@@ -333,6 +370,7 @@ class ConversationBubble(QWidget, Themeable):
                 border: 1px solid {theme.qss(theme.palette.text_tertiary)};
                 border-radius: 10px;
                 selection-background-color: {theme.qss(theme.palette.text_selection)};
+                padding: 5px;
             }}
         """)
 
@@ -399,20 +437,25 @@ class ConversationBubble(QWidget, Themeable):
     def _add_subcontent_label(self, content: str) -> None:
         content = content.replace("\n", "\n\n")
         lbl = TypoLabel(content)
+
         lbl.setWordWrap(False)
         lbl.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.LinksAccessibleByMouse)
         lbl.setTextFormat(Qt.TextFormat.MarkdownText)
+        lbl.setCursor(QCursor(Qt.CursorShape.IBeamCursor))
+
         shared.theme.add_widget(lbl)
         self.content_lyt.addWidget(lbl)
         self.__content_wdgs.append(lbl)
 
     def _add_subcontent_code(self, content: str) -> None:
         code = Code()
+
         code.text = content.strip()
         code.language = SyntaxLanguage.PYTHON
         code.hide_status_bar()
         code.set_readonly(True)
         code.setMaximumHeight(250)
+
         shared.theme.add_widget(code)
         self.content_lyt.addWidget(code)
         self.__content_wdgs.append(code)
@@ -496,8 +539,12 @@ class ConversationView(QWidget):
         self.bubbles_lyt.setContentsMargins(0, 0, 0, 0)
         self.bubbles_lyt.setSpacing(22)
         self.bubbles_content.setLayout(self.bubbles_lyt)
+        self.bubbles_content.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.bubbles_lyt.setAlignment(Qt.AlignmentFlag.AlignTop)
+        # Setting alignment to AlignTop messes label's word wrap,
+        # so we just add an expanding spacer item at the bottom
+        # self.bubbles_lyt.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.bottom_spacer = QSpacerItem(1, 175, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.content_scroller = QScrollArea()
         self.content_scroller.setWidget(self.bubbles_content)
@@ -505,7 +552,7 @@ class ConversationView(QWidget):
         self.content_scroller.setWidgetResizable(True)
         self.content_scroller.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         layout.addWidget(self.content_scroller)
-        self.content_scroller.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.content_scroller.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.content_scroller.setStyleSheet("""
             QScrollArea {
@@ -582,7 +629,7 @@ class ConversationView(QWidget):
         c = ConversationBubble(self, convo_msg, name, rtl=rtl)
         shared.theme.add_widget(c)
         c.add_content(convo_msg.content.strip())
-        c.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        c.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
 
         single_bubble_lyt = QHBoxLayout()
         single_bubble_lyt.setObjectName("single_bubble_lyt")
@@ -597,6 +644,9 @@ class ConversationView(QWidget):
         self.bubbles_lyt.addLayout(single_bubble_lyt)
 
         c.set_word_wrapping(True)
+
+        self.bubbles_lyt.removeItem(self.bottom_spacer)
+        self.bubbles_lyt.addItem(self.bottom_spacer)
 
         return c
     

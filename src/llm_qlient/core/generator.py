@@ -105,7 +105,8 @@ class Generator(QThread):
             self._log_config(cfg)
 
             # FIXME
-            if shared.model is not None and shared.model.backend != LLMBackend.DUMMY:
+            model_loaded = shared.model is not None and shared.model.backend != LLMBackend.DUMMY
+            if model_loaded:
                 shared.model._llama.reset()
 
             # Flatten conversation messages into what chat formatter expects
@@ -123,7 +124,7 @@ class Generator(QThread):
             if request.mode == "retry" and messages[-1]["role"] == "assistant":
                 messages = messages[:-1]
 
-            if request.mode == "continue":
+            if model_loaded and request.mode == "continue":
                 # Remove the last assistant message so we can insert generation tag
                 # It will be added later
                 prompt_msgs = messages[:-1]

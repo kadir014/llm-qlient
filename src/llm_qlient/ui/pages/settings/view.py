@@ -101,6 +101,12 @@ class View(BaseView):
             slider=True
         )
 
+        self.add_setting(
+            "Pair brackets",
+            "In text editors, pair characters like `(`, `[`, `{` and `\"` with their closing counterparts automatically.",
+            "editor_auto_pair"
+        )
+
         hdivider(3, self.content_lyt)
 
         self.add_setting("Show system metrics", "", "system_metrics_show")
@@ -118,6 +124,8 @@ class View(BaseView):
         )
 
         self.add_version_section()
+
+        self.content_lyt.addSpacing(35)
 
     def add_setting(self,
             text: str,

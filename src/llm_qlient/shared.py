@@ -108,8 +108,9 @@ settings = Settings({
     "gen_seed": 2147483647,
     "gen_temp": 0.8,
 
-    "center_conversation_view": True,
+    "center_conversation_view": False,
     "ui_font_scale": 1.0,
+    "editor_auto_pair": True,
 
     "system_metrics_show": True,
     "system_metrics_interval": 2.0,
