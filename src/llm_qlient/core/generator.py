@@ -101,7 +101,6 @@ class Generator(QThread):
                 max_tokens=shared.settings["gen_length"],
                 temperature=shared.settings["gen_temp"]
             )
-            shared.model.seed = shared.settings["gen_seed"]
 
             self._log_config(cfg)
 
@@ -114,6 +113,11 @@ class Generator(QThread):
                 {"role": msg.role.name.lower(), "content": msg.content}
                 for msg in request.convo.messages
             ]
+
+            system_msg = {"role": "system", "content": request.convo.character.system_prompt}
+            messages.insert(0, system_msg)
+
+            shared.model.seed = shared.settings["gen_seed"]
 
             # Adjust sent messages for models that enforce role order
             if request.mode == "retry" and messages[-1]["role"] == "assistant":
