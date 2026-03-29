@@ -316,5 +316,5 @@ class GenerationRequest:
 
         Doesn't affect the generation itself, it's passed down to signals
     """
-    convo: Conversation
+    convo: Conversation | str
     mode: str

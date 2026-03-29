@@ -386,6 +386,9 @@ class ConversationController(QObject):
 
     @pyqtSlot(str)
     def _generation_started(self, mode: str) -> None:
+        if mode not in {"new", "retry", "continue"}:
+            return
+
         curr_convo = shared.convos[shared.current_convo_idx]
 
         if mode == "new":
@@ -402,6 +405,9 @@ class ConversationController(QObject):
             chunk: ChatChunk,
             stats: GenerationStats
             ) -> None:
+        if mode not in {"new", "retry", "continue"}:
+            return
+
         # Clear the old non-formatted streamed text and add the formatted version
         self.stream_bubble.clear_content()
         self.stream_bubble.add_content(self.stream_msg.content)
@@ -415,6 +421,9 @@ class ConversationController(QObject):
 
     @pyqtSlot(str, ChatChunk)
     def _new_chat_chunk(self, mode: str, chunk: ChatChunk) -> None:
+        if mode not in {"new", "retry", "continue"}:
+            return
+
         # This should never happen, but let's not ignore it
         if self.stream_msg is None or self.stream_bubble is None:
             log.error("Streaming message bubble not found.")

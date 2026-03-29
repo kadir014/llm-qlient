@@ -66,7 +66,7 @@ class InputComposer(QWidget, Themeable):
         shared.theme.add_widget(self.continue_btn)
         buttons_lyt.addWidget(self.continue_btn)
 
-        self.stop_btn = Button(icon_name="hi-pause", variant=Button.Variant.GHOST)
+        self.stop_btn = Button(icon_name="hi-stop", variant=Button.Variant.GHOST)
         self.stop_btn.setFixedSize(btn_height, btn_height)
         self.stop_btn.setIconSize(QSize(icon_height, icon_height))
         self.stop_btn.border_radius = -1

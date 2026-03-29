@@ -70,7 +70,7 @@ class Generator(QThread):
     
     @pyqtSlot(GenerationRequest)
     def start_gen(self, request: GenerationRequest) -> None:
-        """ Start generating. """
+        """ Start generating chat. """
         self._queue.put(request)
 
     @pyqtSlot()
@@ -146,59 +146,66 @@ class Generator(QThread):
             if model_loaded:
                 shared.model._llama.reset()
 
-            # Flatten conversation messages into what chat formatter expects
-            messages = [
-                {"role": msg.role.name.lower(), "content": msg.content}
-                for msg in request.convo.messages
-            ]
-
-            system_msg = {"role": "system", "content": self.render_system_prompt(request)}
-            messages.insert(0, system_msg)
-
             shared.model.seed = shared.settings["gen_seed"]
 
-            # Adjust sent messages for models that enforce role order
-            if request.mode == "retry" and messages[-1]["role"] == "assistant":
-                messages = messages[:-1]
+            if request.mode in {"new", "retry", "continue"}:
+                # Flatten conversation messages into what chat formatter expects
+                messages = [
+                    {"role": msg.role.name.lower(), "content": msg.content}
+                    for msg in request.convo.messages
+                ]
 
-            if model_loaded and request.mode == "continue":
-                # Remove the last assistant message so we can insert generation tag
-                # It will be added later
-                prompt_msgs = messages[:-1]
+                system_msg = {"role": "system", "content": self.render_system_prompt(request)}
+                messages.insert(0, system_msg)
 
-                formatter_state = shared.model._formatter.add_generation_prompt
-                shared.model._formatter.add_generation_prompt = True
-                prompt: str = shared.model._formatter(messages=prompt_msgs).prompt
-                shared.model._formatter.add_generation_prompt = formatter_state
+                # Adjust sent messages for models that enforce role order
+                if request.mode == "retry" and messages[-1]["role"] == "assistant":
+                    messages = messages[:-1]
 
-                # chatml-like formats place a '\n' after role tags
-                # prompt = prompt.rstrip()
+                if model_loaded and request.mode == "continue":
+                    # Remove the last assistant message so we can insert generation tag
+                    # It will be added later
+                    prompt_msgs = messages[:-1]
 
-                # Append the unfinished assistant content back
-                prompt += messages[-1]["content"]
+                    formatter_state = shared.model._formatter.add_generation_prompt
+                    shared.model._formatter.add_generation_prompt = True
+                    prompt: str = shared.model._formatter(messages=prompt_msgs).prompt
+                    shared.model._formatter.add_generation_prompt = formatter_state
 
-                # I haven't encountered this, but remove any leftover tokens
-                # so it can continue generating smoothly just in case
-                prompt = prompt.removesuffix(shared.model.eos_token)
-                prompt = prompt.removeprefix(shared.model.bos_token)
+                    # chatml-like formats place a '\n' after role tags
+                    # prompt = prompt.rstrip()
 
+                    # Append the unfinished assistant content back
+                    prompt += messages[-1]["content"]
+
+                    # I haven't encountered this, but remove any leftover tokens
+                    # so it can continue generating smoothly just in case
+                    prompt = prompt.removesuffix(shared.model.eos_token)
+                    prompt = prompt.removeprefix(shared.model.bos_token)
+
+                    stream = shared.model.stream(
+                        prompt,
+                        generation_config=cfg
+                    )
+
+                else:
+                    stream = shared.model.stream_chat(
+                        messages,
+                        generation_config=cfg
+                    )
+
+            elif request.mode in {"text"}:
                 stream = shared.model.stream(
-                    prompt,
-                    generation_config=cfg
-                )
-
-            else:
-                stream = shared.model.stream_chat(
-                    messages,
+                    request.convo,
                     generation_config=cfg
                 )
 
             self._last_stream = stream
 
             full_content = ""
-            last_chunk: ChatChunk | None = None
+            last_chunk: ChatChunk | str | None = None
             for chunk in stream:
-                # In 'continue' mode, regular text generation is done
+                # In 'continue' and 'text' mode, regular text generation is done
                 if isinstance(chunk, str):
                     chunk = ChatChunk("assistant", chunk)
 
