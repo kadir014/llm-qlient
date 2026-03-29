@@ -75,12 +75,14 @@ class CharacterCard(QWidget, Themeable):
         layout.addLayout(char_interact_lyt)
 
         self.edit_btn = Button("Edit", icon_name="hi-pencil", variant=Button.Variant.OUTLINE)
+        self.edit_btn.setMinimumWidth(85)
         self.edit_btn.setIconSize(QSize(20, 20))
         shared.theme.add_widget(self.edit_btn)
         char_interact_lyt.addWidget(self.edit_btn, alignment=Qt.AlignmentFlag.AlignTop)
         self.edit_btn.clicked.connect(self._edit_btn_clicked)
 
         self.chat_btn = Button("Chat", icon_name="hi-chat-bubble-oval-left")
+        self.chat_btn.setMinimumWidth(85)
         self.chat_btn.setIconSize(QSize(20, 20))
         self.chat_btn.background_color = "brand_primary"
         shared.theme.add_widget(self.chat_btn)
@@ -149,7 +151,18 @@ class CharacterCard(QWidget, Themeable):
             attr: str,
             multiline: bool = False
             ) -> None:
-        """ Add a new editable field for character model. """
+        """
+        Add a new editable field for character model.
+        
+        Parameters
+        ----------
+        label
+            Text content of label
+        attr
+            Attribute responding in dataclass model
+        multiline
+            Whether the editable field is multiline or not
+        """
 
         field_lyt = QHBoxLayout()
         field_lyt.setContentsMargins(0, 0, 20, 0)
@@ -164,6 +177,7 @@ class CharacterCard(QWidget, Themeable):
         if multiline:
             line = AutoPairEditor()
             line.setPlainText(content)
+            line.setMinimumHeight(200)
             field_lyt.addWidget(line)
         else:
             line = LineEdit(content)
@@ -242,7 +256,9 @@ class View(BaseView):
         content.setMinimumWidth(620)
 
         content_scroller = QScrollArea()
-        content_scroller.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        content_scroller.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
         content_scroller.setWidget(content)
         content_scroller.setWidgetResizable(True)
         content_scroller.setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -269,6 +285,38 @@ class View(BaseView):
 
         self.load_cards()
 
+        self.content_lyt.addSpacing(25)
+
+        add_lyt = QHBoxLayout()
+        add_lyt.setContentsMargins(0, 0, 0, 0)
+        add_lyt.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.content_lyt.addLayout(add_lyt)
+
+        self.add_input = LineEdit()
+        self.add_input.setMaximumWidth(250)
+        self.add_input.setPlaceholderText("UI name of your new character")
+        
+        shared.theme.add_widget(self.add_input)
+        add_lyt.addWidget(self.add_input)
+
+        self.add_button = Button(icon_name="hi-plus")
+        self.add_button.background_color = "state_success"
+        self.add_button.border_radius = -1.0
+        self.add_button.setIconSize(QSize(22, 22))
+        self.add_button.setFixedSize(35, 35)
+        self.add_button.clicked.connect(self.new_card)
+
+        shared.theme.add_widget(self.add_button)
+        add_lyt.addWidget(self.add_button)
+
+        disc_lbl = body(
+            "'UI names' are different from actual names of cards, they are used as unique identifiers internally and NOT included in prompts.\nThus you can't change them after creating.",
+            self.content_lyt
+        )
+        disc_lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+
+        self.content_lyt.addSpacing(35)
+
     def load_cards(self) -> None:
         """ Load character card widgets from character models. """
 
@@ -276,3 +324,29 @@ class View(BaseView):
             card = CharacterCard(char)
             shared.theme.add_widget(card)
             self.content_lyt.addWidget(card)
+
+    def new_card(self) -> None:
+        """ Add a new user persona card. """
+
+        ui_name = self.add_input.text().strip()
+        if len(ui_name) == 0:
+            shared.toasts.error("Enter a UI name!")
+            return
+
+        self.add_input.clear()
+
+        char = Character(
+            ui_name,
+            "Character",
+            "",
+            "You are an AI assistant. Your name is {{char}} and user's name is {{user}}.",
+            "",
+            ""
+        )
+        char.avatar_pixmap = shared.default_ai_pixmap
+        shared.characters.append(char)
+        shared.contents.save_characters()
+
+        card = CharacterCard(char)
+        shared.theme.add_widget(card)
+        self.content_lyt.insertWidget(self.content_lyt.count() - 4, card)

@@ -78,6 +78,7 @@ characters: list[Character] = []
 
 personas: list[UserPersona] = []
 current_persona_idx: int = 0
+persona_changed = Broadcast()
 
 convos: list[Conversation] = []
 current_convo_idx: int = 0

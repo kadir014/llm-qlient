@@ -144,7 +144,7 @@ class ConversationView(QWidget):
         # user persona for chat bubble title, instead of storing the user persona
         # too with conversation data.
         if rtl:
-            name = shared.personas[shared.current_persona_idx].name
+            name = shared.personas[shared.current_persona_idx].ui_name
         else:
             name = character.ui_name
 

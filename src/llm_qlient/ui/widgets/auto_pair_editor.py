@@ -22,7 +22,6 @@ class AutoPairEditor(QPlainTextEdit):
     
     PAIRS = {
         "\"": "\"",
-        "'": "'",
         "(": ")",
         "{": "}",
         "[": "]",

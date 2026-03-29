@@ -30,6 +30,12 @@ def vdivider(margin: int, layout: QLayout) -> TypoLabel:
     layout.addWidget(lbl)
     return lbl
 
+def caption(text: str, layout: QLayout) -> TypoLabel:
+    lbl = TypoLabel(text, TypographyType.CAPTION)
+    shared.theme.add_widget(lbl)
+    layout.addWidget(lbl)
+    return lbl
+
 def body(text: str, layout: QLayout) -> TypoLabel:
     lbl = TypoLabel(text, TypographyType.BODY)
     shared.theme.add_widget(lbl)
@@ -74,6 +80,7 @@ def info_label_pair(desc: str, info: str, layout: QLayout) -> BadgeLabel:
 __all__ = (
     "hdivider",
     "vdivider",
+    "caption",
     "body",
     "h1",
     "h2",

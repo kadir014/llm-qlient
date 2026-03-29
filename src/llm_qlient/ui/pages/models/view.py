@@ -55,7 +55,7 @@ class ModelPanel(QWidget, Themeable):
         h3("Current Model", model_info_lyt)
 
         self.name_lbl = info_label_pair("Name:", "", model_info_lyt)
-        self.ctx_lbl = info_label_pair("Current context:", "", model_info_lyt)
+        self.ctx_lbl = info_label_pair("Context:", "", model_info_lyt)
         self.size_lbl = info_label_pair("Disk Size:", "", model_info_lyt)
         self.type_lbl = info_label_pair("Type:", "", model_info_lyt)
         self.update_model_info()

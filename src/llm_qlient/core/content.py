@@ -136,7 +136,7 @@ class ContentManager:
                 [persona.serialize() for persona in shared.personas]
             )
 
-        log.info(f"Loaded <fg.lightcyan>{len(shared.convos)}</> user personas in {log.t(self._prof['save'].last)}.")
+        log.info(f"Loaded <fg.lightcyan>{len(shared.personas)}</> user personas in {log.t(self._prof['save'].last)}.")
 
     def load_characters(self) -> None:
         with self._prof.profile("load"):
@@ -162,7 +162,7 @@ class ContentManager:
 
                 shared.characters.append(character)
 
-        log.info(f"Loaded <fg.lightcyan>{len(shared.convos)}</> characters in {log.t(self._prof['load'].last)}.")
+        log.info(f"Loaded <fg.lightcyan>{len(shared.characters)}</> characters in {log.t(self._prof['load'].last)}.")
 
     def save_characters(self) -> None:
         with self._prof.profile("save"):
@@ -171,7 +171,7 @@ class ContentManager:
                 [char.serialize() for char in shared.characters]
             )
 
-        log.info(f"Saved <fg.lightcyan>{len(shared.convos)}</> characters in {log.t(self._prof['save'].last)}.")
+        log.info(f"Saved <fg.lightcyan>{len(shared.characters)}</> characters in {log.t(self._prof['save'].last)}.")
 
     def load_all(self) -> None:
         self.load_user_personas()
