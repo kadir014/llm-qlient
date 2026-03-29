@@ -16,7 +16,7 @@ from PyQt6.QtGui import QPainter, QPainterPath, QPixmap
 from freshqt.widgets import Button, Avatar
 
 from llm_qlient import shared
-from llm_qlient.core import log
+from llm_qlient.core import log, path
 from llm_qlient.ui.factories import *
 from llm_qlient.core.models import Character
 from llm_qlient.ui.pages.base_view import BaseView
@@ -35,13 +35,8 @@ class CharacterCard(QWidget):
         layout.setContentsMargins(17, 17, 17, 17)
         self.setLayout(layout)
 
-        # TODO: Global pixmap manager to cache pixmaps with same path, transforms, etc
-        pixmap = QPixmap(character.avatar_path)
-        if pixmap.isNull():
-            pixmap = None
-            log.warn(f"Avatar for <fg.yellow>{character.ui_name}</> could't load at '<fg.darkgray>{character.avatar_path}</>'")
-
-        self.avatar = Avatar(pixmap)
+        self.avatar = Avatar(character.avatar_pixmap)
+        self.avatar.colorize = False
         self.avatar.setFixedSize(95, 95)
         self.avatar.radius = 7
         shared.theme.add_widget(self.avatar)

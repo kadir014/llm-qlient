@@ -18,7 +18,7 @@ from enum import Enum, auto
 from time import time
 import uuid
 
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QPixmap
 
 from llm_qlient import shared
 from llm_qlient.core import log
@@ -103,19 +103,30 @@ class Page:
         return hash(self.id)
     
 
+@immutable_fields("ui_name")
 @dataclass
 class UserPersona(Serializable):
+    ui_name: str
     name: str
+    avatar_path: str
+    personality: str
+    avatar_pixmap: QPixmap | None = None
 
     def serialize(self) -> JSONContent:
         return {
+            "ui_name": self.ui_name,
             "name": self.name,
+            "avatar_path": self.avatar_path,
+            "personality": self.personality
         }
     
     @classmethod
     def deserialize(cls, data: JSONContent) -> "UserPersona":
         return cls(
-            name=data["name"]
+            ui_name=data["ui_name"],
+            name=data["name"],
+            avatar_path=data["avatar_path"],
+            personality=data["personality"]
         )
     
 
@@ -147,6 +158,7 @@ class Character(Serializable):
     system_prompt: str
     personality: str
     opening_message: str
+    avatar_pixmap: QPixmap | None = None
 
     def serialize(self) -> JSONContent:
         return {

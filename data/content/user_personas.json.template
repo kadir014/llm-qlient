@@ -1,5 +1,8 @@
 [
     {
-        "name": "User"
+        "ui_name": "Default User",
+        "name": "User",
+        "avatar_path": "",
+        "personality": ""
     }
 ]

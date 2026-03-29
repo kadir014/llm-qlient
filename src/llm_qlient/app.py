@@ -16,7 +16,7 @@ from pathlib import Path
 
 from PyQt6.QtCore import qInstallMessageHandler, QtMsgType, QMessageLogContext
 from PyQt6.QtWidgets import QApplication
-from PyQt6.QtGui import QFont, QFontDatabase
+from PyQt6.QtGui import QFont, QFontDatabase, QPixmap
 from freshqt.assets import HEROICONS
 from panllm import LLM, LLMBackend, LLMConfig
 import miniprofiler
@@ -71,6 +71,13 @@ class App:
             for icon_path in HEROICONS.keys():
                 shared.icons.load_single(icon_path)
             shared.icons.load(path.resolve("data", "icons"))
+
+            shared.default_ai_pixmap = QPixmap(
+                str(path.resolve("data", "images", "default_ai_avatar.png"))
+            )
+            shared.default_user_pixmap = QPixmap(
+                str(path.resolve("data", "images", "default_user_avatar.png"))
+            )
 
             shared.theme.font_family = "Outfit"
             shared.theme.update_palette(UI_CATPPUCCIN_MOCHA)

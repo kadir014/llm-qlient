@@ -65,7 +65,13 @@ class ConversationBubble(QWidget, Themeable):
         title_lyt.setSpacing(12)
         layout.addLayout(title_lyt)
 
-        self.avatar = Avatar()
+        if rtl:
+            pixmap = shared.personas[shared.current_persona_idx].avatar_pixmap
+        else:
+            pixmap = shared.convos[shared.current_convo_idx].character.avatar_pixmap
+
+        self.avatar = Avatar(pixmap)
+        self.avatar.colorize = False
         shared.theme.add_widget(self.avatar)
         title_lyt.addWidget(self.avatar)
 

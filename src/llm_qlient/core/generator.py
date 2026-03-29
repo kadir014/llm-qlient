@@ -108,6 +108,8 @@ class Generator(QThread):
         prompt = character.system_prompt
         prompt = prompt.replace("{{char}}", character.name)
         prompt = prompt.replace("{{user}}", user.name)
+        prompt = prompt.replace("{{char_personality}}", character.personality)
+        prompt = prompt.replace("{{user_personality}}", user.personality)
 
         return prompt
     

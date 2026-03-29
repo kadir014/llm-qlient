@@ -13,6 +13,7 @@
 from typing import TYPE_CHECKING
 
 from PyQt6.QtWidgets import QApplication
+from PyQt6.QtGui import QPixmap
 from freshqt.core import Theme
 from panllm.backends.base import BaseLLM
 
@@ -80,6 +81,9 @@ current_persona_idx: int = 0
 
 convos: list[Conversation] = []
 current_convo_idx: int = 0
+
+default_ai_pixmap: QPixmap | None = None
+default_user_pixmap: QPixmap | None = None
 
 
 ################################################################################

@@ -31,8 +31,9 @@ class ChatHistoryEntry(QWidget):
         layout.setContentsMargins(3, 3, 3, 3)
         self.setLayout(layout)
 
-        self.avatar = Avatar()
+        self.avatar = Avatar(convo.character.avatar_pixmap)
         self.avatar.setFixedSize(24, 24)
+        self.avatar.colorize = False
         shared.theme.add_widget(self.avatar)
         layout.addWidget(self.avatar)
 

@@ -14,6 +14,7 @@ import os
 import json
 from pathlib import Path
 
+from PyQt6.QtGui import QPixmap
 import miniprofiler
 
 from llm_qlient import shared
@@ -111,7 +112,20 @@ class ContentManager:
             )
 
             for persona in personas_json:
-                shared.personas.append(UserPersona.deserialize(persona))
+                user_persona = UserPersona.deserialize(persona)
+
+                pixmap = QPixmap(user_persona.avatar_path)
+
+                if pixmap.isNull():
+                    pixmap = shared.default_user_pixmap
+                    log.warn(f"Avatar for <fg.yellow>{user_persona.ui_name}</> could't load at '<fg.darkgray>{user_persona.avatar_path}</>'")
+
+                    user_persona.avatar_pixmap = pixmap.copy()
+
+                else:
+                    user_persona.avatar_pixmap = pixmap
+
+                shared.personas.append(user_persona)
 
         log.info(f"Loaded <fg.lightcyan>{len(shared.personas)}</> user personas in {log.t(self._prof['load'].last)}.")
 
@@ -132,7 +146,21 @@ class ContentManager:
             )
 
             for char in chars_json:
-                shared.characters.append(Character.deserialize(char))
+                character = Character.deserialize(char)
+
+                # TODO: Global pixmap manager to cache pixmaps with same path, transforms, etc
+                pixmap = QPixmap(character.avatar_path)
+
+                if pixmap.isNull():
+                    pixmap = shared.default_ai_pixmap
+                    log.warn(f"Avatar for <fg.yellow>{character.ui_name}</> could't load at '<fg.darkgray>{character.avatar_path}</>'")
+
+                    character.avatar_pixmap = pixmap.copy()
+
+                else:
+                    character.avatar_pixmap = pixmap
+
+                shared.characters.append(character)
 
         log.info(f"Loaded <fg.lightcyan>{len(shared.convos)}</> characters in {log.t(self._prof['load'].last)}.")
 
