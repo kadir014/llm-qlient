@@ -84,9 +84,12 @@ class Generator(QThread):
     def _log_config(self, cfg: GenerationConfig) -> None:
         log.debug(
             f"{self._log_repr()} Generation config:\n"
-            f"Max length:  <fg.lightcyan>{cfg.max_tokens}</> tokens\n"
-            f"Seed:        <fg.lightcyan>{shared.model.seed}</>\n"
-            f"Temperature: <fg.lightcyan>{cfg.temperature}</>"
+            f"Max length:    <fg.lightcyan>{cfg.max_tokens}</> tokens\n"
+            f"Seed:          <fg.lightcyan>{shared.model.seed}</>\n"
+            f"Temperature:   <fg.lightcyan>{cfg.temperature}</>\n"
+            f"top-p: <fg.lightcyan>{cfg.top_p}</> min-p: <fg.lightcyan>{cfg.min_p}</> top-k: <fg.lightcyan>{cfg.top_k}</>\n"
+            f"Freq. Penalty: <fg.lightcyan>{cfg.frequence_penalty}</>\n"
+            f"Pres. Penalty: <fg.lightcyan>{cfg.presence_penalty}</>"
         )
 
     def _log_stats(self, stream: BaseStream) -> None:
@@ -96,6 +99,17 @@ class Generator(QThread):
             f"<fg.lightcyan>{round(stream.stats.elapsed, 2)}</> s\n"
             f"<fg.lightcyan>{round(stream.stats.tokens_per_second, 2)}</> t/s"
         )
+
+    @staticmethod
+    def render_system_prompt(request: GenerationRequest) -> str:
+        character = request.convo.character
+        user = shared.personas[shared.current_persona_idx]
+
+        prompt = character.system_prompt
+        prompt = prompt.replace("{{char}}", character.name)
+        prompt = prompt.replace("{{user}}", user.name)
+
+        return prompt
     
     def run(self) -> None:
         log.info(f"{self._log_repr()} Generator started")
@@ -115,7 +129,12 @@ class Generator(QThread):
 
             cfg = GenerationConfig(
                 max_tokens=shared.settings["gen_length"],
-                temperature=shared.settings["gen_temp"]
+                temperature=shared.settings["gen_temp"],
+                top_p=shared.settings["gen_top_p"],
+                min_p=shared.settings["gen_min_p"],
+                top_k=shared.settings["gen_top_k"],
+                frequence_penalty=shared.settings["gen_frequence_penalty"],
+                presence_penalty=shared.settings["gen_presence_penalty"]
             )
 
             self._log_config(cfg)
@@ -131,7 +150,7 @@ class Generator(QThread):
                 for msg in request.convo.messages
             ]
 
-            system_msg = {"role": "system", "content": request.convo.character.system_prompt}
+            system_msg = {"role": "system", "content": self.render_system_prompt(request)}
             messages.insert(0, system_msg)
 
             shared.model.seed = shared.settings["gen_seed"]

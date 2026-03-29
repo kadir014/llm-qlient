@@ -103,10 +103,16 @@ settings = Settings({
     "theme": "builtin:Catppuccin Mocha",
 
     "model_path": None,
+    "model_ctx": 1024,
 
     "gen_length": 512,
-    "gen_seed": 2147483647,
+    "gen_seed": -1,
     "gen_temp": 0.8,
+    "gen_top_p": 0.95,
+    "gen_min_p": 0.05,
+    "gen_top_k": 40,
+    "gen_frequence_penalty": 0.0,
+    "gen_presence_penalty": 0.0,
 
     "center_conversation_view": False,
     "ui_font_scale": 1.0,

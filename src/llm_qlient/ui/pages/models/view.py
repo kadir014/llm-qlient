@@ -33,7 +33,6 @@ from llm_qlient.core import log
 from llm_qlient.core.types import SettingsDict
 from llm_qlient.ui.pages.base_view import BaseView
 from llm_qlient.ui.factories import *
-from llm_qlient.ui.layout_utils import iter_widgets
 
 
 class ModelPanel(QWidget, Themeable):
@@ -56,15 +55,21 @@ class ModelPanel(QWidget, Themeable):
         h3("Current Model", model_info_lyt)
 
         self.name_lbl = info_label_pair("Name:", "", model_info_lyt)
+        self.ctx_lbl = info_label_pair("Current context:", "", model_info_lyt)
         self.size_lbl = info_label_pair("Disk Size:", "", model_info_lyt)
         self.type_lbl = info_label_pair("Type:", "", model_info_lyt)
         self.update_model_info()
 
         # Model loading
+        model_load_wdg = QWidget()
+        model_load_wdg.setFixedWidth(500)
+
         model_load_lyt = QVBoxLayout()
         model_load_lyt.setContentsMargins(0, 0, 0, 0)
         model_load_lyt.setAlignment(Qt.AlignmentFlag.AlignRight)
-        layout.addLayout(model_load_lyt)
+        
+        model_load_wdg.setLayout(model_load_lyt)
+        layout.addWidget(model_load_wdg)
 
         h3("Load From Disk", model_load_lyt)
 
@@ -73,7 +78,6 @@ class ModelPanel(QWidget, Themeable):
         model_load_lyt.addLayout(load_lyt)
 
         self.load_input = LineEdit()
-        self.load_input.setFixedWidth(400)
         self.load_input.setPlaceholderText(".../path/to/your/model")
         shared.theme.add_widget(self.load_input)
         load_lyt.addWidget(self.load_input)
@@ -83,6 +87,32 @@ class ModelPanel(QWidget, Themeable):
         self.browse_btn.setFixedSize(35, 35)
         shared.theme.add_widget(self.browse_btn)
         load_lyt.addWidget(self.browse_btn)
+
+        ctx_lyt = QHBoxLayout()
+        ctx_lyt.setContentsMargins(0, 0, 0, 0)
+        model_load_lyt.addLayout(ctx_lyt)
+
+        ctx_lbl = TypoLabel("Context length:")
+        shared.theme.add_widget(ctx_lbl)
+        ctx_lyt.addWidget(ctx_lbl)
+
+        self.ctx_input = LineEdit(str(shared.settings["model_ctx"]))
+        self.ctx_input.setPlaceholderText("1024")
+        self.ctx_input.setToolTip("You need to reload the model for context length to be updated.")
+        shared.theme.add_widget(self.ctx_input)
+        ctx_lyt.addWidget(self.ctx_input)
+
+        @self.ctx_input.editingFinished.connect
+        def _():
+            value = self.ctx_input.text()
+            
+            try:
+                value = int(value)
+            except ValueError:
+                value = shared.settings["model_ctx"]
+
+            shared.settings["model_ctx"] = value
+            self.ctx_input.setText(str(value))
 
         btns_lyt = QHBoxLayout()
         btns_lyt.setContentsMargins(0, 0, 0, 0)
@@ -106,6 +136,7 @@ class ModelPanel(QWidget, Themeable):
 
         if shared.model is None or shared.model.backend == LLMBackend.DUMMY:
             self.name_lbl.setText("Not loaded")
+            self.ctx_lbl.setText("0 tokens")
             self.size_lbl.setText("0.0 GB")
             self.type_lbl.setText("Unknown")
             return
@@ -116,11 +147,30 @@ class ModelPanel(QWidget, Themeable):
         model_type = path.suffix.replace(".", "")
         model_size = os.path.getsize(path)
         model_size /= 1073741824.0
+        model_ctx = shared.model.model_config.context
 
         self.name_lbl.setText(model_name)
+        self.ctx_lbl.setText(f"{model_ctx} tokens")
         self.size_lbl.setText(f"{round(model_size, 2)} GB")
         self.type_lbl.setText(model_type.upper())
     
+    def paintEvent(self, e) -> None:
+        pt = QPainter(self)
+        pt.setRenderHint(QPainter.RenderHint.Antialiasing, on=True)
+
+        w, h = self.width(), self.height()
+        border_r = 12
+
+        clippath = QPainterPath()
+        clippath.addRoundedRect(0, 0, w, h, border_r, border_r)
+        pt.setClipPath(clippath)
+
+        bg_color = shared.theme.qcolor(shared.theme.palette.background_tertiary)
+        pt.fillRect(0, 0, w, h, bg_color)
+
+
+# TODO: Generalize this & put in a common module because it's used in multiple widgets
+class Panel(QWidget, Themeable):
     def paintEvent(self, e) -> None:
         pt = QPainter(self)
         pt.setRenderHint(QPainter.RenderHint.Antialiasing, on=True)
@@ -159,20 +209,58 @@ class ModelConfiguration(QWidget):
 
         self.add_config_field(
             "Seed",
-            "Sampling seed.\nNegative numbers shuffle the seed randomly for each generation.",
+            "Sampling seed.\nLeave at -1 to shuffle the seed randomly for each new generation.",
             "gen_seed"
         )
 
         self.add_config_field(
             "Temperature",
-            "Sampling temperature.",
+            "Sampling temperature.\nHigher values increase the diversity of new tokens, lower values make it more deterministic.",
             "gen_temp"
         )
 
         self.new_row()
 
+        self.add_config_field(
+            "top-p",
+            "Threshold value for nucleus (Top-P) sampling.",
+            "gen_top_p"
+        )
+
+        self.add_config_field(
+            "min-p",
+            "Value to use for Minimum P sampling.",
+            "gen_min_p"
+        )
+
+        self.add_config_field(
+            "top-k",
+            "Top-K value to use for sampling.",
+            "gen_top_k"
+        )
+
+        self.new_row()
+
+        self.add_config_field(
+            "Frequence Penalty",
+            "The penalty value to apply to tokens based on their frequency in the current context.",
+            "gen_frequence_penalty"
+        )
+
+        self.add_config_field(
+            "Presence Penalty",
+            "The penalty value to control whether to apply a penalty to tokens that are already present in the current context.",
+            "gen_presence_penalty"
+        )
+
+        layout.addStretch()
+
+        layout.addSpacing(40)
+
     def new_row(self) -> None:
         """ Add a new row. """
+
+        self.layout().addSpacing(15)
 
         self._last_row = QHBoxLayout()
         self._last_row.setContentsMargins(0, 0, 0, 0)
@@ -201,11 +289,11 @@ class ModelConfiguration(QWidget):
             self.new_row()
 
         field_lyt = QVBoxLayout()
-        field_lyt.setContentsMargins(0, 0, 0, 0)
+        field_pad = 10
+        field_lyt.setContentsMargins(field_pad, field_pad, field_pad, field_pad)
 
-        field_wdg = QWidget()
+        field_wdg = Panel()
         field_wdg.setLayout(field_lyt)
-        field_wdg.setFixedHeight(130)
         self._last_row.addWidget(field_wdg)
 
         title_lbl = TypoLabel(title, TypographyType.SUBTITLE)
@@ -312,8 +400,6 @@ class View(BaseView):
 
         h1("Model Configuration", self.content_lyt)
 
-        self.content_lyt.addSpacing(20)
-
         self.model_config = ModelConfiguration()
         self.content_lyt.addWidget(self.model_config)
 
@@ -413,10 +499,14 @@ class Controller(QObject):
 
         # Unload the previously loaded model
         self.unload_model(notify=False)
+
+        context_length = shared.settings["model_ctx"]
         
         shared.toasts.info("Loading model...")
+        log.debug(f"Model loading with requested context length <fg.lightcyan>{context_length}</> tokens.")
 
-        cfg = LLMConfig(path=path, context=32 * 320, verbose=True)
+
+        cfg = LLMConfig(path=path, context=context_length, verbose=True)
         self._worker = LoaderWorker(cfg)
         self._worker.finished.connect(self._worker_cleanup)
         self._worker.load_success.connect(lambda: shared.toasts.success("Model loaded."))
