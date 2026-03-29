@@ -7,7 +7,7 @@
   <a href="https://github.com/kadir014/llm-qlient/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
   <img src="https://img.shields.io/badge/python-3.12+-blue">
   <a href="https://app.codacy.com/gh/kadir014/llm-qlient/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade"><img src="https://app.codacy.com/project/badge/Grade/4086611b2f194cebaeffbfeece78d2e1"/></a>
-  <img src="https://img.shields.io/badge/version-0.1.0--alpha-yellow">
+  <img src="https://img.shields.io/badge/version-0.1.1--alpha-yellow">
   <img src="https://img.shields.io/github/downloads/kadir014/llm-qlient/total">
   <a href="https://github.com/kadir014/llm-qlient/issues"><img src="https://img.shields.io/github/issues/kadir014/llm-qlient"></a>
 </p>

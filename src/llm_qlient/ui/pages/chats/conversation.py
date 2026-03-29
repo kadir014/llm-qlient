@@ -25,7 +25,7 @@ from PyQt6.QtWidgets import (
 )
 from freshqt.core import TypographyType
 from freshqt.widgets import TypoLabel
-from panllm import ChatChunk
+from panllm import ChatChunk, GenerationStats
 
 from llm_qlient import shared
 from llm_qlient.core import log
@@ -394,8 +394,12 @@ class ConversationController(QObject):
 
         self.view.input_composer.set_buttons_state(True)
 
-    @pyqtSlot(str, ChatChunk)
-    def _generation_finished(self, mode: str, chunk: ChatChunk) -> None:
+    @pyqtSlot(str, ChatChunk, GenerationStats)
+    def _generation_finished(self,
+            mode: str,
+            chunk: ChatChunk,
+            stats: GenerationStats
+            ) -> None:
         # Clear the old non-formatted streamed text and add the formatted version
         self.stream_bubble.clear_content()
         self.stream_bubble.add_content(self.stream_msg.content)

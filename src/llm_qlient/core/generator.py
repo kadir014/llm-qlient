@@ -14,7 +14,13 @@ import queue
 
 from PyQt6.QtCore import QThread, pyqtSignal, pyqtSlot
 
-from panllm import GenerationConfig, ChatChunk, LLMBackend, BaseStream
+from panllm import (
+    GenerationConfig,
+    ChatChunk,
+    LLMBackend,
+    BaseStream,
+    GenerationStats
+)
 
 from llm_qlient import shared
 from llm_qlient.core import log
@@ -36,7 +42,7 @@ class Generator(QThread):
     """
 
     generation_started = pyqtSignal(str)
-    generation_finished = pyqtSignal(str, ChatChunk)
+    generation_finished = pyqtSignal(str, ChatChunk, GenerationStats)
     new_chat_chunk = pyqtSignal(str, ChatChunk)
 
     def __init__(self) -> None:
@@ -47,10 +53,20 @@ class Generator(QThread):
         self._queue: queue.Queue[GenerationRequest] = queue.Queue(1)
         self._is_generating = False
 
+        self._last_stream: BaseStream | None = None
+
     @property
     def is_generating(self) -> bool:
         """ Is the thread still generating new tokens? """
         return self._is_generating
+    
+    @property
+    def stats(self) -> GenerationStats:
+        """ Current generation statistics. """
+        if self._last_stream is None:
+            return GenerationStats()
+        
+        return self._last_stream.stats
     
     @pyqtSlot(GenerationRequest)
     def start_gen(self, request: GenerationRequest) -> None:
@@ -156,6 +172,8 @@ class Generator(QThread):
                     generation_config=cfg
                 )
 
+            self._last_stream = stream
+
             full_content = ""
             last_chunk: ChatChunk | None = None
             for chunk in stream:
@@ -180,12 +198,15 @@ class Generator(QThread):
                 # Every chunk will carry the role, so we can just use the last chunk
                 full_chunk = ChatChunk(last_chunk.role, full_content)
 
+            last_stats = stream.stats
+
             self._log_stats(stream)
+            self._last_stream = None
 
             # The queue might have been exhausted by the main thread for termination
             if self.should_run:
                 self._queue.task_done()
                 self._is_generating = False
-                self.generation_finished.emit(request.mode, full_chunk)
+                self.generation_finished.emit(request.mode, full_chunk, last_stats)
 
         log.info(f"{self._log_repr()} Generator finished")
