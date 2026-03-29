@@ -392,6 +392,8 @@ class ConversationController(QObject):
             self.stream_msg = curr_convo.add("assistant", "")
             self.stream_bubble = self.view.add_bubble(self.stream_msg, curr_convo.character)
 
+        self.stream_bubble.footer_edit_btn.hide()
+
         self.view.input_composer.set_buttons_state(True)
 
     @pyqtSlot(str, ChatChunk, GenerationStats)
@@ -404,6 +406,8 @@ class ConversationController(QObject):
         self.stream_bubble.clear_content()
         self.stream_bubble.add_content(self.stream_msg.content)
         self.stream_bubble.set_word_wrapping(True)
+
+        self.stream_bubble.footer_edit_btn.show()
 
         self.view.input_composer.set_buttons_state(False)
 

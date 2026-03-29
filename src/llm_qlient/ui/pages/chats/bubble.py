@@ -167,7 +167,7 @@ class ConversationBubble(QWidget, Themeable):
             for widget in self.__content_wdgs:
                 widget.show()
 
-                self.footer_edit_btn.icon_name = "hi-pencil"
+            self.footer_edit_btn.icon_name = "hi-pencil"
 
     def toggle_edit_mode(self) -> None:
         """ Toggle enable or disable message editing mode. """

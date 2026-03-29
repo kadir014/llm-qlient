@@ -101,7 +101,7 @@ class Page:
 
     def __hash__(self) -> int:
         return hash(self.id)
-    
+
 
 @immutable_fields("ui_name")
 @dataclass
@@ -128,7 +128,6 @@ class UserPersona(Serializable):
             avatar_path=data["avatar_path"],
             personality=data["personality"]
         )
-    
 
 @immutable_fields("ui_name")
 @dataclass
