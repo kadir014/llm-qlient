@@ -17,7 +17,8 @@ from freshqt.widgets import Button
 from panllm import ChatChunk, GenerationStats
 
 from llm_qlient import shared
-from llm_qlient.core.models import GenerationRequest, Conversation
+from llm_qlient.core import log
+from llm_qlient.core.models import GenerationRequest
 from llm_qlient.ui.factories import *
 from llm_qlient.ui.pages.base_view import BaseView
 from llm_qlient.ui.widgets.auto_pair_editor import AutoPairEditor
@@ -92,6 +93,12 @@ class View(BaseView, Themeable):
 
     def start_generating(self) -> None:
         """ Start generating with current prompt. """
+
+        if not shared.gen.is_available:
+            log.debug("No model loaded, skipping playground gen.")
+            shared.toasts.error("No model loaded!")
+            return
+
         prompt = self.editor.toPlainText()
         shared.gen.start_gen(GenerationRequest(prompt, "text"))
 

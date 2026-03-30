@@ -291,6 +291,11 @@ class ConversationController(QObject):
     def send_new(self) -> None:
         """ Send current message to current conversation. """
 
+        if not shared.gen.is_available:
+            log.debug("No model loaded, skipping 'send'.")
+            shared.toasts.error("No model loaded!")
+            return
+
         if shared.gen.is_generating:
             log.debug("Already generating, skipping 'send'.")
             return
@@ -313,6 +318,11 @@ class ConversationController(QObject):
     def retry_last(self) -> None:
         """ Regenerate the last assistant message. """
 
+        if not shared.gen.is_available:
+            log.debug("No model loaded, skipping 'retry'.")
+            shared.toasts.error("No model loaded!")
+            return
+
         if shared.gen.is_generating:
             log.debug("Already generating, skipping 'retry'.")
             return
@@ -332,6 +342,11 @@ class ConversationController(QObject):
 
     def continue_last(self) -> None:
         """ Continue generating the last assistant message. """
+
+        if not shared.gen.is_available:
+            log.debug("No model loaded, skipping 'continue'.")
+            shared.toasts.error("No model loaded!")
+            return
 
         if shared.gen.is_generating:
             log.debug("Already generating, skipping 'continue'.")

@@ -125,5 +125,7 @@ settings = Settings({
 
     "system_metrics_show": True,
     "system_metrics_interval": 2.0,
-    "system_metrics_formatter": "CPU: {cpu}%     ┆     GPU: {gpu}%     ┆     RAM: {ram_used}GB     ┆     VRAM: {vram_used}GB"
+    "system_metrics_formatter": "CPU: {cpu}%     ┆     GPU: {gpu}%     ┆     RAM: {ram_used}GB     ┆     VRAM: {vram_used}GB",
+
+    "dev_allow_dummy_gen": False
 })

@@ -56,6 +56,12 @@ class Generator(QThread):
         self._last_stream: BaseStream | None = None
 
     @property
+    def is_available(self) -> bool:
+        """ Is currently a model loaded or a proper backend is selected? """
+        if shared.settings["dev_allow_dummy_gen"]: return True
+        return shared.model is not None and shared.model.backend != LLMBackend.DUMMY
+
+    @property
     def is_generating(self) -> bool:
         """ Is the thread still generating new tokens? """
         return self._is_generating
@@ -142,8 +148,7 @@ class Generator(QThread):
             self._log_config(cfg)
 
             # FIXME
-            model_loaded = shared.model is not None and shared.model.backend != LLMBackend.DUMMY
-            if model_loaded:
+            if self.is_available and shared.model.backend == LLMBackend.LLAMA_CPP:
                 shared.model._llama.reset()
 
             shared.model.seed = shared.settings["gen_seed"]
@@ -162,7 +167,7 @@ class Generator(QThread):
                 if request.mode == "retry" and messages[-1]["role"] == "assistant":
                     messages = messages[:-1]
 
-                if model_loaded and request.mode == "continue":
+                if (self.is_available and shared.model.backend == LLMBackend.LLAMA_CPP) and request.mode == "continue":
                     # Remove the last assistant message so we can insert generation tag
                     # It will be added later
                     prompt_msgs = messages[:-1]

@@ -123,6 +123,16 @@ class View(BaseView):
             "system_metrics_formatter"
         )
 
+        hdivider(3, self.content_lyt)
+
+        self.add_setting(
+            "Allow dummy text generation",
+            "If no model is loaded, instead of warning the user, generate dummy text imitating assistant response.\nUseful for debugging purposes.",
+            "dev_allow_dummy_gen"
+        )
+
+        hdivider(3, self.content_lyt)
+
         self.add_version_section()
 
         self.content_lyt.addSpacing(35)
