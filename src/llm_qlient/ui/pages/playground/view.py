@@ -79,7 +79,7 @@ class View(BaseView, Themeable):
         """ Set user interface generation state. """
 
         if state:
-            self.editor.setEnabled(True)
+            self.editor.setReadOnly(True)
 
             self.gen_button.hide()
             self.stop_button.show()

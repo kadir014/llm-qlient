@@ -85,7 +85,7 @@ class IconManager(BaseIconManager):
         if src.isNull():
             return icon
 
-        dst = QPixmap(src.size())
+        dst = QPixmap(size)
         dst.fill(Qt.GlobalColor.transparent)
 
         painter = QPainter(dst)

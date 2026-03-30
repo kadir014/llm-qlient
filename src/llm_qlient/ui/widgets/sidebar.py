@@ -63,7 +63,7 @@ class SideBar(QWidget):
     def add_page_button(self, page: Page) -> Button:
         """
         Add a new page button to the sidebar.
-        
+
         Parameters
         ----------
         page
@@ -97,7 +97,7 @@ class SideBar(QWidget):
     def change_cursor(self, page: Page, play_anim: bool = True) -> None:
         """
         Move cursor to given page button.
-        
+
         Parameters
         ----------
         page
@@ -188,7 +188,7 @@ class SideBar(QWidget):
 
     def __resize_finished(self) -> None:
         if not self.__open:
-            for page, button in self.page_buttons.items():
+            for button in self.page_buttons.values():
                 button.text = ""
 
     def resizeEvent(self, e) -> None:
