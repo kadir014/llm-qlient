@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 ################################################################################
 
 # LLM Qlient version
-__version__ = "0.1.1-alpha"
+__version__ = "0.1.2-alpha"
 
 from PyQt6.QtCore import QT_VERSION_STR as __qt_version__
 from PyQt6.QtCore import PYQT_VERSION_STR as __pyqt_version__
