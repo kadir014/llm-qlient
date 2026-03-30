@@ -47,6 +47,11 @@ class View(BaseView, Themeable):
             QSizePolicy.Policy.Expanding
         )
         layout.addWidget(self.editor)
+        self.editor.setPlaceholderText(
+            "Write anything...\n\n"
+            "The text you write here is purely passed down to the model as the initial prompt when generating.\n"
+            "No chat templates or formatting is applied."
+        )
 
         layout.addSpacing(20)
 

@@ -275,6 +275,8 @@ class ConversationController(QObject):
         self.view.input_composer.continue_btn.clicked.connect(self.continue_last)
         self.view.input_composer.stop_btn.clicked.connect(shared.gen.stop_gen)
 
+        self.view.input_composer.editor.return_pressed.connect(self._input_return_pressed)
+
         self.change_conversation_index(0)
 
         shared.gen.generation_started.connect(self._generation_started)
@@ -398,6 +400,16 @@ class ConversationController(QObject):
         if last_msg.role == ConversationRole.ASSISTANT:
             self.stream_msg = last_msg
             self.stream_bubble = self.view.get_bubble_by_message(last_msg)
+
+    @pyqtSlot(bool)
+    def _input_return_pressed(self, shift: bool) -> None:
+        if shift:
+            return
+
+        if not shared.settings["editor_enter_sends"]:
+            return
+
+        self.send_new()
 
     @pyqtSlot(str)
     def _generation_started(self, mode: str) -> None:

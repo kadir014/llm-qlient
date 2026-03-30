@@ -122,6 +122,7 @@ settings = Settings({
     "center_conversation_view": False,
     "ui_font_scale": 1.0,
     "editor_auto_pair": True,
+    "editor_enter_sends": True,
 
     "system_metrics_show": True,
     "system_metrics_interval": 2.0,

@@ -107,6 +107,12 @@ class View(BaseView):
             "editor_auto_pair"
         )
 
+        self.add_setting(
+            "Enter sends message",
+            "Send new message in the text conversation with 'enter' or 'return' key.",
+            "editor_enter_sends"
+        )
+
         hdivider(3, self.content_lyt)
 
         self.add_setting("Show system metrics", "", "system_metrics_show")
